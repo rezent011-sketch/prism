@@ -1,5 +1,7 @@
 import AgentList from './AgentList'
 import SimulationLog from './SimulationLog'
+import EmotionChart from './EmotionChart'
+import RelationMap from './RelationMap'
 import ReportView from './ReportView'
 
 /**
@@ -48,6 +50,12 @@ export default function SimulationDetail({ detail, api }) {
           <SimulationLog interactions={interactions} totalTurns={simulation.turn_count} />
         </div>
       </div>
+
+      {/* 感情変化チャート */}
+      <EmotionChart simId={simulation.id} api={api} />
+
+      {/* 関係性マップ */}
+      <RelationMap simId={simulation.id} api={api} />
 
       {/* レポートセクション */}
       <ReportView simId={simulation.id} status={simulation.status} api={api} />
