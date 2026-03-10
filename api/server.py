@@ -12,7 +12,7 @@ from typing import Optional
 
 from prism.database import (
     init_db, create_simulation, update_simulation_status,
-    list_simulations, get_agents, get_interactions
+    list_simulations, get_agents, get_interactions, get_relations
 )
 from prism.models import Simulation
 from prism.agent_generator import generate_agents
@@ -197,6 +197,13 @@ def _save_report(sim_id: int, text: str):
     )
     conn.commit()
     conn.close()
+
+
+@app.get("/api/simulations/{sim_id}/relations")
+def get_simulation_relations(sim_id: int):
+    """エージェント間の関係性データを取得"""
+    relations = get_relations(sim_id)
+    return {"relations": relations}
 
 
 @app.get("/api/simulations/{sim_id}/report")

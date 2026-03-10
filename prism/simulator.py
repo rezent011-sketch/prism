@@ -1,8 +1,12 @@
 """エージェント間対話シミュレーションループ"""
+import json
 from typing import List
 from .models import Agent, Interaction
 from .llm import call_claude
-from .database import save_interaction, get_interactions, update_agent_emotion
+from .database import (
+    save_interaction, get_interactions, update_agent_emotion,
+    save_agent_memory, get_agent_memories, update_relation, get_agent_relations
+)
 
 
 def run_simulation(seed_text: str, agents: List[Agent], simulation_id: int, turns: int = 10) -> List[Interaction]:
@@ -28,6 +32,9 @@ def run_simulation(seed_text: str, agents: List[Agent], simulation_id: int, turn
             update_agent_emotion(agent.id, interaction.emotional_state)
             agent.emotional_state = interaction.emotional_state
 
+            # 関係性分析と記憶の記録
+            _analyze_and_record(agent, interaction, agents, simulation_id, turn)
+
             # コンテキストに追加
             context += f"\n[{agent.name}]: {interaction.content}"
 
@@ -47,6 +54,28 @@ def _build_context(seed_text: str, recent_interactions: List[Interaction]) -> st
 
 def _generate_reaction(agent: Agent, context: str, turn: int, simulation_id: int) -> Interaction:
     """エージェントの反応をClaude APIで生成"""
+    # 記憶と関係性を取得
+    memories = get_agent_memories(agent.id, limit=3)
+    relations = get_agent_relations(agent.id, simulation_id)
+
+    memory_section = ""
+    if memories:
+        memory_lines = [f"- ターン{m['turn']}: {m['memory_text']}" for m in memories]
+        memory_section = f"\n\n【過去の記憶】\n" + "\n".join(memory_lines)
+
+    relation_section = ""
+    if relations:
+        top = relations[:2]  # 信頼度が高い
+        bottom = relations[-2:] if len(relations) > 2 else []  # 信頼度が低い
+        lines = []
+        for r in top:
+            lines.append(f"- {r['name']}: 信頼度 {r['trust_score']:+.2f}")
+        for r in bottom:
+            if r not in top:
+                lines.append(f"- {r['name']}: 信頼度 {r['trust_score']:+.2f}")
+        if lines:
+            relation_section = f"\n\n【主要な関係性】\n" + "\n".join(lines)
+
     system_prompt = f"""あなたは社会シミュレーション内のキャラクターです。以下の人物として振る舞ってください。
 
 名前: {agent.name}
@@ -55,7 +84,7 @@ def _generate_reaction(agent: Agent, context: str, turn: int, simulation_id: int
 性格: {agent.personality}
 立場: {agent.stance}
 価値観: {agent.values}
-現在の感情: {agent.emotional_state}
+現在の感情: {agent.emotional_state}{memory_section}{relation_section}
 
 必ず以下のJSON形式で回答してください:
 {{"action_type": "発言", "content": "あなたの発言や行動の内容", "emotional_state": "現在の感情状態"}}
@@ -93,3 +122,58 @@ JSON以外のテキストは含めないでください。"""
     )
     interaction.id = save_interaction(interaction)
     return interaction
+
+
+def _analyze_and_record(agent: Agent, interaction: Interaction, all_agents: List[Agent], sim_id: int, turn: int):
+    """発言を分析し、関係性と記憶を更新"""
+    other_names = [a.name for a in all_agents if a.id != agent.id]
+    if not other_names:
+        return
+
+    names_list = ", ".join(other_names)
+    prompt = f"""発言者: {agent.name}
+発言: {interaction.content}
+他の参加者: {names_list}
+
+この発言で誰に賛同/反論しているか、JSON配列で返せ。該当なしなら空配列。
+形式: [{{"target":"名前","type":"agree"}}] か [{{"target":"名前","type":"disagree"}}]
+JSON配列のみ返せ。"""
+
+    try:
+        result = call_claude("短く分析せよ。JSON配列のみ返せ。", prompt, max_tokens=100)
+        text = result.strip()
+        if text.startswith("```"):
+            lines = text.split("\n")
+            text = "\n".join(lines[1:-1]) if lines[-1].strip() == "```" else "\n".join(lines[1:])
+            text = text.strip()
+        analyses = json.loads(text)
+    except (json.JSONDecodeError, Exception):
+        return
+
+    if not isinstance(analyses, list):
+        return
+
+    agent_map = {a.name: a for a in all_agents}
+    for item in analyses:
+        target_name = item.get("target", "")
+        rel_type = item.get("type", "")
+        target_agent = agent_map.get(target_name)
+        if not target_agent:
+            continue
+
+        if rel_type == "agree":
+            delta = 0.1
+            memory = f"{target_name}に賛同し、好意的な関係を築いた"
+        elif rel_type == "disagree":
+            delta = -0.15
+            memory = f"{target_name}と意見が対立し、緊張を感じた"
+        else:
+            continue
+
+        # 関係性更新（双方向: 発言者→対象）
+        update_relation(sim_id, agent.id, target_agent.id, delta)
+        # 対象側の記憶も記録
+        save_agent_memory(target_agent.id, sim_id, turn,
+                          f"ターン{turn}で{agent.name}から{'反論' if rel_type == 'disagree' else '賛同'}を受けた")
+        # 発言者の記憶
+        save_agent_memory(agent.id, sim_id, turn, f"ターン{turn}: {memory}")

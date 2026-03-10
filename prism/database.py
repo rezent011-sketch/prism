@@ -51,6 +51,25 @@ def init_db(db_path: str = DB_PATH):
             FOREIGN KEY (simulation_id) REFERENCES simulations(id),
             FOREIGN KEY (agent_id) REFERENCES agents(id)
         );
+        CREATE TABLE IF NOT EXISTS agent_relations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            simulation_id INTEGER,
+            agent_id_from INTEGER,
+            agent_id_to INTEGER,
+            trust_score REAL DEFAULT 0.0,
+            influence_count INTEGER DEFAULT 0,
+            last_updated TEXT,
+            FOREIGN KEY (simulation_id) REFERENCES simulations(id)
+        );
+        CREATE TABLE IF NOT EXISTS agent_memories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id INTEGER,
+            simulation_id INTEGER,
+            turn INTEGER,
+            memory_text TEXT,
+            created_at TEXT,
+            FOREIGN KEY (agent_id) REFERENCES agents(id)
+        );
     """)
     conn.commit()
     conn.close()
@@ -160,3 +179,88 @@ def update_agent_emotion(agent_id: int, emotional_state: str, db_path: str = DB_
     conn.execute("UPDATE agents SET emotional_state=? WHERE id=?", (emotional_state, agent_id))
     conn.commit()
     conn.close()
+
+
+def save_agent_memory(agent_id: int, sim_id: int, turn: int, memory_text: str, db_path: str = DB_PATH):
+    """エージェントの記憶を保存"""
+    from datetime import datetime
+    conn = get_connection(db_path)
+    conn.execute(
+        "INSERT INTO agent_memories (agent_id, simulation_id, turn, memory_text, created_at) VALUES (?,?,?,?,?)",
+        (agent_id, sim_id, turn, memory_text, datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_agent_memories(agent_id: int, limit: int = 3, db_path: str = DB_PATH) -> List[dict]:
+    """直近の記憶を取得"""
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        "SELECT turn, memory_text FROM agent_memories WHERE agent_id=? ORDER BY id DESC LIMIT ?",
+        (agent_id, limit)
+    ).fetchall()
+    conn.close()
+    return [{"turn": r["turn"], "memory_text": r["memory_text"]} for r in rows]
+
+
+def update_relation(sim_id: int, from_id: int, to_id: int, delta: float, db_path: str = DB_PATH):
+    """関係性スコアを更新（なければ作成）"""
+    from datetime import datetime
+    conn = get_connection(db_path)
+    row = conn.execute(
+        "SELECT id, trust_score, influence_count FROM agent_relations WHERE simulation_id=? AND agent_id_from=? AND agent_id_to=?",
+        (sim_id, from_id, to_id)
+    ).fetchone()
+    now = datetime.now().isoformat()
+    if row:
+        new_score = max(-1.0, min(1.0, row["trust_score"] + delta))
+        conn.execute(
+            "UPDATE agent_relations SET trust_score=?, influence_count=?, last_updated=? WHERE id=?",
+            (new_score, row["influence_count"] + 1, now, row["id"])
+        )
+    else:
+        conn.execute(
+            "INSERT INTO agent_relations (simulation_id, agent_id_from, agent_id_to, trust_score, influence_count, last_updated) VALUES (?,?,?,?,?,?)",
+            (sim_id, from_id, to_id, max(-1.0, min(1.0, delta)), 1, now)
+        )
+    conn.commit()
+    conn.close()
+
+
+def get_relations(sim_id: int, db_path: str = DB_PATH) -> List[dict]:
+    """全関係性データを返す"""
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        """SELECT r.*, a1.name as from_name, a2.name as to_name
+           FROM agent_relations r
+           JOIN agents a1 ON r.agent_id_from = a1.id
+           JOIN agents a2 ON r.agent_id_to = a2.id
+           WHERE r.simulation_id=?
+           ORDER BY r.trust_score DESC""",
+        (sim_id,)
+    ).fetchall()
+    conn.close()
+    return [
+        {
+            "from_id": r["agent_id_from"], "to_id": r["agent_id_to"],
+            "from_name": r["from_name"], "to_name": r["to_name"],
+            "trust_score": r["trust_score"], "influence_count": r["influence_count"],
+        }
+        for r in rows
+    ]
+
+
+def get_agent_relations(agent_id: int, sim_id: int, db_path: str = DB_PATH) -> List[dict]:
+    """特定エージェントの関係性（信頼度の高い/低い順）"""
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        """SELECT r.trust_score, a.name
+           FROM agent_relations r
+           JOIN agents a ON r.agent_id_to = a.id
+           WHERE r.agent_id_from=? AND r.simulation_id=?
+           ORDER BY r.trust_score DESC""",
+        (agent_id, sim_id)
+    ).fetchall()
+    conn.close()
+    return [{"name": r["name"], "trust_score": r["trust_score"]} for r in rows]
