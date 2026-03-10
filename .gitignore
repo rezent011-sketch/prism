@@ -2,3 +2,5 @@
 __pycache__/
 *.pyc
 prism_data.db
+node_modules/
+frontend/dist/
