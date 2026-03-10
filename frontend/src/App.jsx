@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import SimulationForm from './components/SimulationForm'
-import AgentList from './components/AgentList'
-import SimulationLog from './components/SimulationLog'
-import ReportView from './components/ReportView'
+import SimulationList from './components/SimulationList'
+import SimulationDetail from './components/SimulationDetail'
 
-const API = 'http://localhost:8000/api'
+// API ベースURL
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API = `${API_BASE}/api`
 
 // タブ定義
 const TABS = [
-  { id: 'home', label: '🏠 新規シミュレーション' },
+  { id: 'home', label: '🔮 新規シミュレーション' },
   { id: 'list', label: '📋 シミュレーション一覧' },
   { id: 'detail', label: '🔍 詳細' },
 ]
@@ -16,9 +17,10 @@ const TABS = [
 export default function App() {
   const [tab, setTab] = useState('home')
   const [simulations, setSimulations] = useState([])
-  const [selectedSim, setSelectedSim] = useState(null)
   const [detail, setDetail] = useState(null)
   const [loading, setLoading] = useState(false)
+  // シミュレーション実行中のステータス表示用
+  const [runStatus, setRunStatus] = useState(null) // null | { phase, turn, totalTurns, simId }
 
   // シミュレーション一覧を取得
   const fetchSimulations = async () => {
@@ -37,7 +39,6 @@ export default function App() {
       const res = await fetch(`${API}/simulations/${id}`)
       const data = await res.json()
       setDetail(data)
-      setSelectedSim(id)
       setTab('detail')
     } catch (e) {
       console.error('詳細取得エラー:', e)
@@ -47,6 +48,7 @@ export default function App() {
   // シミュレーション開始
   const startSimulation = async (seed, agentCount, turnCount) => {
     setLoading(true)
+    setRunStatus({ phase: 'starting', turn: 0, totalTurns: turnCount, simId: null })
     try {
       const res = await fetch(`${API}/simulate`, {
         method: 'POST',
@@ -54,23 +56,40 @@ export default function App() {
         body: JSON.stringify({ seed, agent_count: agentCount, turn_count: turnCount }),
       })
       const data = await res.json()
-      // ポーリングで完了を待つ
       const simId = data.simulation_id
+      setRunStatus({ phase: 'generating', turn: 0, totalTurns: turnCount, simId })
+
+      // ポーリングで完了を待つ
+      const startTime = Date.now()
       const poll = setInterval(async () => {
-        const r = await fetch(`${API}/simulations`)
-        const sims = await r.json()
-        const sim = sims.find(s => s.id === simId)
-        if (sim && sim.status !== 'created' && sim.status !== 'running') {
-          clearInterval(poll)
-          setLoading(false)
-          fetchSimulations()
-          fetchDetail(simId)
+        try {
+          const r = await fetch(`${API}/simulations`)
+          const sims = await r.json()
+          const sim = sims.find(s => s.id === simId)
+          setSimulations(sims)
+
+          if (sim) {
+            if (sim.status === 'running') {
+              // ターン進捗を推定（経過時間ベース）
+              const elapsed = (Date.now() - startTime) / 1000
+              const estimatedTurn = Math.min(Math.floor(elapsed / 10) + 1, turnCount)
+              setRunStatus({ phase: 'running', turn: estimatedTurn, totalTurns: turnCount, simId })
+            } else if (sim.status === 'completed' || sim.status === 'failed') {
+              clearInterval(poll)
+              setLoading(false)
+              setRunStatus(null)
+              fetchSimulations()
+              fetchDetail(simId)
+            }
+          }
+        } catch (e) {
+          // ポーリングエラーは無視
         }
-        setSimulations(sims)
       }, 3000)
     } catch (e) {
       console.error('シミュレーション開始エラー:', e)
       setLoading(false)
+      setRunStatus(null)
     }
   }
 
@@ -79,120 +98,75 @@ export default function App() {
   }, [])
 
   return (
-    <div className="min-h-screen">
-      {/* ヘッダー */}
-      <header className="border-b border-[#30363d] px-6 py-4">
-        <h1 className="text-2xl font-bold">
-          <span className="accent">🔮 Prism</span>
-          <span className="text-[#8b949e] text-lg ml-3">群体知能シミュレーションエンジン</span>
-        </h1>
+    <div className="min-h-screen bg-[#050a14]">
+      {/* ヘッダー（固定） */}
+      <header className="sticky top-0 z-50 bg-[#050a14]/90 backdrop-blur-md border-b border-[#7c3aed]/20 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold gradient-text">🔮 Prism</h1>
+            <span className="text-[#94a3b8] text-sm hidden sm:inline">群体知能シミュレーションエンジン</span>
+          </div>
+          <a
+            href="https://github.com/rezent011-sketch/prism"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-[#94a3b8] hover:text-[#e2e8f0] transition-colors text-sm"
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            GitHub
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+          </a>
+        </div>
       </header>
 
-      {/* タブ */}
-      <nav className="flex border-b border-[#30363d] px-6">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            onClick={() => {
-              setTab(t.id)
-              if (t.id === 'list') fetchSimulations()
-            }}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-              tab === t.id
-                ? 'border-[#8b5cf6] text-white'
-                : 'border-transparent text-[#8b949e] hover:text-white'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* タブナビゲーション */}
+      <nav className="border-b border-[#112240] px-6 bg-[#0d1b2e]/50">
+        <div className="max-w-7xl mx-auto flex">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              onClick={() => {
+                setTab(t.id)
+                if (t.id === 'list') fetchSimulations()
+              }}
+              className={`px-5 py-3 text-sm font-medium border-b-2 transition-all duration-300 ${
+                tab === t.id
+                  ? 'border-[#7c3aed] text-[#e2e8f0] bg-[#7c3aed]/10'
+                  : 'border-transparent text-[#94a3b8] hover:text-[#e2e8f0] hover:bg-[#112240]/50'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </nav>
 
-      {/* コンテンツ */}
+      {/* メインコンテンツ */}
       <main className="p-6 max-w-7xl mx-auto">
-        {tab === 'home' && (
-          <SimulationForm onStart={startSimulation} loading={loading} />
-        )}
-
-        {tab === 'list' && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">シミュレーション一覧</h2>
-            {simulations.length === 0 ? (
-              <p className="text-[#8b949e]">まだシミュレーションがありません。</p>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {simulations.map(sim => (
-                  <div
-                    key={sim.id}
-                    onClick={() => fetchDetail(sim.id)}
-                    className="bg-[#161b22] border border-[#30363d] rounded-lg p-4 cursor-pointer hover:border-[#8b5cf6] transition-colors"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold">#{sim.id}</span>
-                      <StatusBadge status={sim.status} />
-                    </div>
-                    <p className="text-sm text-[#8b949e] mb-2 line-clamp-2">{sim.seed}</p>
-                    <div className="text-xs text-[#8b949e] flex gap-4">
-                      <span>👥 {sim.agent_count}人</span>
-                      <span>🔄 {sim.turn_count}ターン</span>
-                    </div>
-                    <div className="text-xs text-[#8b949e] mt-1">
-                      {sim.created_at?.slice(0, 19).replace('T', ' ')}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {tab === 'detail' && detail && (
-          <div>
-            <h2 className="text-xl font-bold mb-4">
-              シミュレーション #{detail.simulation.id}
-              <StatusBadge status={detail.simulation.status} className="ml-3" />
-            </h2>
-            <p className="text-[#8b949e] mb-4 text-sm">{detail.simulation.seed}</p>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* 左パネル: エージェント一覧 */}
-              <div className="lg:col-span-1">
-                <AgentList agents={detail.agents} />
-              </div>
-              {/* 右パネル: 対話ログ */}
-              <div className="lg:col-span-2">
-                <SimulationLog interactions={detail.interactions} />
-              </div>
+        <div className="fade-in" key={tab}>
+          {tab === 'home' && (
+            <SimulationForm
+              onStart={startSimulation}
+              loading={loading}
+              runStatus={runStatus}
+            />
+          )}
+          {tab === 'list' && (
+            <SimulationList
+              simulations={simulations}
+              onSelect={fetchDetail}
+            />
+          )}
+          {tab === 'detail' && detail && (
+            <SimulationDetail detail={detail} api={API} />
+          )}
+          {tab === 'detail' && !detail && (
+            <div className="text-center text-[#94a3b8] py-20">
+              <p className="text-lg">シミュレーションを選択してください</p>
             </div>
-
-            {/* レポート */}
-            <div className="mt-6">
-              <ReportView simId={detail.simulation.id} status={detail.simulation.status} />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
-  )
-}
-
-// ステータスバッジコンポーネント
-function StatusBadge({ status, className = '' }) {
-  const colors = {
-    created: 'bg-[#30363d] text-[#8b949e]',
-    running: 'bg-yellow-900/50 text-yellow-300',
-    completed: 'bg-green-900/50 text-green-300',
-    failed: 'bg-red-900/50 text-red-300',
-  }
-  const labels = {
-    created: '作成済み',
-    running: '実行中',
-    completed: '完了',
-    failed: '失敗',
-  }
-  return (
-    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${colors[status] || ''} ${className}`}>
-      {labels[status] || status}
-    </span>
   )
 }
