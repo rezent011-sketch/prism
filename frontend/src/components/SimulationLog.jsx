@@ -62,7 +62,16 @@ export default function SimulationLog({ interactions, totalTurns }) {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[#e2e8f0] leading-relaxed">{item.content}</p>
+                    <p className="text-sm text-[#e2e8f0] leading-relaxed">{
+                      (() => {
+                        try {
+                          const parsed = JSON.parse(item.content);
+                          return parsed.content || item.content;
+                        } catch {
+                          return item.content;
+                        }
+                      })()
+                    }</p>
                   </div>
                 </div>
               ))}
