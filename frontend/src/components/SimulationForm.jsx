@@ -43,17 +43,17 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
   return (
     <div>
       {/* ヒーロー文言 */}
-      <div style={{textAlign:"center",marginBottom:"24px"}}>
-        <h2 style={{fontSize:"clamp(1.4rem,5vw,2.25rem)",fontWeight:"bold",marginBottom:"8px"}}>
+      <div className="text-center mb-8">
+        <h2 className="text-3xl md:text-4xl font-bold mb-2">
           <span className="gradient-text">AIエージェントが社会をシミュレートする</span>
         </h2>
-        <p style={{fontSize:"1rem",color:"#0ea5e9"}}>未来予測エンジン</p>
+        <p className="text-xl text-[#0ea5e9]">未来予測エンジン</p>
       </div>
 
       {/* 2カラムレイアウト */}
-      <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
-        {/* 左: 入力パネル */}
-        <form onSubmit={handleSubmit} style={{width:"100%",display:"flex",flexDirection:"column",gap:"16px"}}>
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* 左: 入力パネル (40%) */}
+        <form onSubmit={handleSubmit} className="lg:w-2/5 space-y-5">
           {/* シナリオ入力 */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">シナリオ入力</label>
@@ -69,7 +69,7 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
           {/* プリセットボタン */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">プリセットシナリオ</label>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+            <div className="grid grid-cols-2 gap-2">
               {PRESETS.map((p, i) => (
                 <button
                   key={i}
@@ -91,7 +91,7 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
 
           {/* エージェント数スライダー */}
           <div>
-            <label style={{display:"flex",justifyContent:"space-between",fontSize:"0.85rem",color:"#94a3b8",marginBottom:"8px"}}>
+            <label className="text-sm text-[#94a3b8] mb-2 flex justify-between">
               <span>エージェント数</span>
               <span className="text-[#7c3aed] font-bold text-base">{agentCount}</span>
             </label>
@@ -100,14 +100,14 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
               onChange={e => setAgentCount(Number(e.target.value))}
               className="w-full accent-[#7c3aed] h-2"
             />
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.75rem",color:"#94a3b8",marginTop:"4px"}}>
+            <div className="flex justify-between text-xs text-[#94a3b8] mt-1">
               <span>10</span><span>20</span>
             </div>
           </div>
 
           {/* ターン数スライダー */}
           <div>
-            <label style={{display:"flex",justifyContent:"space-between",fontSize:"0.85rem",color:"#94a3b8",marginBottom:"8px"}}>
+            <label className="text-sm text-[#94a3b8] mb-2 flex justify-between">
               <span>ターン数</span>
               <span className="text-[#0ea5e9] font-bold text-base">{turnCount}</span>
             </label>
@@ -116,7 +116,7 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
               onChange={e => setTurnCount(Number(e.target.value))}
               className="w-full accent-[#0ea5e9] h-2"
             />
-            <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.75rem",color:"#94a3b8",marginTop:"4px"}}>
+            <div className="flex justify-between text-xs text-[#94a3b8] mt-1">
               <span>3</span><span>20</span>
             </div>
           </div>
@@ -138,8 +138,8 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
           </button>
         </form>
 
-        {/* 右: プレビューパネル - デスクトップのみ */}
-        <div style={{display:"none"}} className="lg-show lg:w-3/5 bg-[#0d1b2e] border border-[#112240] rounded-xl p-6 min-h-[400px] flex items-center justify-center">
+        {/* 右: プレビューパネル (60%) */}
+        <div className="lg:w-3/5 bg-[#0d1b2e] border border-[#112240] rounded-xl p-6 min-h-[400px] flex items-center justify-center">
           {!loading && !runStatus && (
             <PreviewIdle />
           )}
