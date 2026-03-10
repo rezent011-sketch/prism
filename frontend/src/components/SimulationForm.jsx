@@ -41,9 +41,9 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
   }
 
   return (
-    <div>
+    <div style={{maxWidth:"1200px",margin:"0 auto"}}>
       {/* ヒーロー文言 */}
-      <div className="text-center mb-8">
+      <div style={{textAlign:"center",marginBottom:"32px",padding:"0 24px"}}>
         <h2 className="text-3xl md:text-4xl font-bold mb-2">
           <span className="gradient-text">AIエージェントが社会をシミュレートする</span>
         </h2>
@@ -133,7 +133,7 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
                 実行中...
               </span>
             ) : (
-              '🔮 シミュレーション開始'
+              (<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px"}}><img src="/prism/logo.png" alt="" style={{width:"22px",height:"22px",objectFit:"contain"}} /> シミュレーション開始</span>)
             )}
           </button>
         </form>
@@ -158,7 +158,7 @@ function PreviewIdle() {
     <div className="text-center">
       {/* 粒子風装飾 */}
       <div className="relative mb-6">
-        <div className="text-6xl mb-4">🔮</div>
+        <img src="/prism/logo.png" alt="Prism" style={{width:"72px",height:"72px",objectFit:"contain",marginBottom:"16px"}} />
         <div className="absolute top-0 left-1/2 -translate-x-1/2">
           {[...Array(5)].map((_, i) => (
             <span
