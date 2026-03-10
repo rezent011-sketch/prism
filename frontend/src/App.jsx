@@ -100,28 +100,24 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#050a14]">
       {/* ヘッダー（固定） */}
-      <header className="sticky top-0 z-50 bg-[#050a14]/90 backdrop-blur-md border-b border-[#7c3aed]/20 px-3 sm:px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div style={{display:"flex",alignItems:"center",gap:"8px"}}><img src="/prism/logo.png" alt="Prism" style={{width:"28px",height:"28px",objectFit:"contain",flexShrink:0}} /><h1 className="text-xl font-bold gradient-text">Prism</h1></div>
-            <span className="text-[#94a3b8] text-xs hidden sm:inline">群体知能シミュレーションエンジン</span>
+      <header style={{position:'sticky',top:0,zIndex:50,background:'rgba(5,10,20,0.92)',backdropFilter:'blur(8px)',borderBottom:'1px solid rgba(124,58,237,0.2)',padding:'10px 12px'}}>
+        <div style={{maxWidth:'1280px',margin:'0 auto',display:'flex',alignItems:'center',justifyContent:'space-between',gap:'8px'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',minWidth:0}}>
+            <img src="/prism/logo.png" alt="Prism" style={{width:'26px',height:'26px',objectFit:'contain',flexShrink:0}} />
+            <h1 style={{fontSize:'1.1rem',fontWeight:'bold',background:'linear-gradient(135deg,#7c3aed,#0ea5e9)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',whiteSpace:'nowrap'}}>Prism</h1>
+            <span style={{color:'#94a3b8',fontSize:'0.7rem',display:'none'}} className="sm-show">群体知能シミュレーションエンジン</span>
           </div>
-          <a
-            href="https://github.com/rezent011-sketch/prism"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-[#94a3b8] hover:text-[#e2e8f0] transition-colors text-sm"
-          >
-            <svg style={{width:"20px",height:"20px",flexShrink:0}} className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          <a href="https://github.com/rezent011-sketch/prism" target="_blank" rel="noopener noreferrer"
+            style={{display:'flex',alignItems:'center',gap:'4px',color:'#94a3b8',textDecoration:'none',fontSize:'0.8rem',flexShrink:0}}>
+            <svg style={{width:'18px',height:'18px',flexShrink:0}} fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             GitHub
-            <svg style={{width:"12px",height:"12px",flexShrink:0}} className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
           </a>
         </div>
       </header>
 
       {/* タブナビゲーション */}
-      <nav className="border-b border-[#112240] px-2 sm:px-6 bg-[#0d1b2e]/50 overflow-x-auto">
-        <div className="max-w-7xl mx-auto flex">
+      <nav style={{borderBottom:"1px solid #112240",padding:"0 8px",background:"rgba(13,27,46,0.5)",overflowX:"auto",display:"flex"}}>
+        <div style={{display:"flex",minWidth:"max-content"}}>
           {TABS.map(t => (
             <button
               key={t.id}
@@ -129,7 +125,7 @@ export default function App() {
                 setTab(t.id)
                 if (t.id === 'list') fetchSimulations()
               }}
-              className={`px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-300 ${
+              style={{padding:'8px 14px',fontSize:'0.78rem',fontWeight:500,whiteSpace:'nowrap',borderBottom:'2px solid',cursor:'pointer',background:'none',transition:'all 0.2s'}} className={` transition-all duration-300 ${
                 tab === t.id
                   ? 'border-[#7c3aed] text-[#e2e8f0] bg-[#7c3aed]/10'
                   : 'border-transparent text-[#94a3b8] hover:text-[#e2e8f0] hover:bg-[#112240]/50'
@@ -142,7 +138,7 @@ export default function App() {
       </nav>
 
       {/* メインコンテンツ */}
-      <main className="p-3 sm:p-6 max-w-7xl mx-auto">
+      <main style={{padding:"12px 8px",maxWidth:"1280px",margin:"0 auto"}}>
         <div className="fade-in" key={tab}>
           {tab === 'home' && (
             <SimulationForm
