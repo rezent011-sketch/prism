@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 // プリセットシナリオ
 const PRESETS = [
@@ -29,7 +29,7 @@ const PRESETS = [
  * 新規シミュレーションフォーム（MiroFish風）
  * 左: 入力パネル / 右: プレビューパネル
  */
-export default function SimulationForm({ onStart, loading, runStatus }) {
+export default function SimulationForm({ onStart, loading, runStatus, api }) {
   const [seed, setSeed] = useState('')
   const [agentCount, setAgentCount] = useState(15)
   const [turnCount, setTurnCount] = useState(10)
@@ -144,7 +144,7 @@ export default function SimulationForm({ onStart, loading, runStatus }) {
             <PreviewIdle />
           )}
           {loading && runStatus && (
-            <PreviewRunning runStatus={runStatus} />
+            <PreviewRunning simId={runStatus.simId} api={api} runStatus={runStatus} />
           )}
         </div>
       </div>
@@ -180,29 +180,88 @@ function PreviewIdle() {
   )
 }
 
-/** 実行中のプレビュー表示 */
-function PreviewRunning({ runStatus }) {
-  const { phase, turn, totalTurns } = runStatus
-  const progress = phase === 'starting' ? 5
-    : phase === 'generating' ? 15
-    : Math.min(15 + (turn / totalTurns) * 85, 95)
+/** 実行中のプレビュー表示（SSEリアルタイムストリーミング） */
+function PreviewRunning({ simId, api, runStatus }) {
+  const [messages, setMessages] = useState([])
+  const messagesEndRef = useRef(null)
+  const { phase, turn, totalTurns } = runStatus || {}
 
-  const statusText = phase === 'starting' ? 'シミュレーションを開始しています...'
-    : phase === 'generating' ? 'エージェントを生成中...'
-    : `ターン ${turn}/${totalTurns} 実行中...`
+  // simIdが確定したらSSE接続を開始
+  useEffect(() => {
+    if (!simId || !api) return
+    const es = new EventSource(`${api}/simulations/${simId}/stream`)
+    es.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data)
+        setMessages(prev => [...prev.slice(-50), msg])
+      } catch {}
+    }
+    es.addEventListener('done', () => es.close())
+    es.onerror = () => es.close()
+    return () => es.close()
+  }, [simId, api])
+
+  // 新しいメッセージが届いたら自動スクロール
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  // simIdがまだない場合（starting/generating フェーズ）はスピナー表示
+  if (!simId || messages.length === 0) {
+    const statusText = phase === 'starting' ? 'シミュレーションを開始しています...'
+      : phase === 'generating' ? 'エージェントを生成中...'
+      : `ターン ${turn}/${totalTurns} 実行中...`
+    const progress = phase === 'starting' ? 5
+      : phase === 'generating' ? 15
+      : Math.min(15 + ((turn || 0) / (totalTurns || 1)) * 85, 95)
+
+    return (
+      <div className="w-full max-w-md text-center">
+        <div className="spinner mx-auto mb-6" style={{ width: 48, height: 48, borderWidth: 4 }} />
+        <p className="text-[#e2e8f0] text-lg font-bold mb-4">{statusText}</p>
+        <div className="w-full bg-[#112240] rounded-full h-3 overflow-hidden">
+          <div
+            className="progress-bar h-full rounded-full transition-all duration-1000"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="text-[#94a3b8] text-sm mt-3">{Math.round(progress)}% 完了</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="w-full max-w-md text-center">
-      <div className="spinner mx-auto mb-6" style={{ width: 48, height: 48, borderWidth: 4 }} />
-      <p className="text-[#e2e8f0] text-lg font-bold mb-4">{statusText}</p>
-      {/* プログレスバー */}
-      <div className="w-full bg-[#112240] rounded-full h-3 overflow-hidden">
-        <div
-          className="progress-bar h-full rounded-full transition-all duration-1000"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <p className="text-[#94a3b8] text-sm mt-3">{Math.round(progress)}% 完了</p>
+    <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',gap:'8px',overflowY:'auto',maxHeight:'560px'}}>
+      <p style={{color:'#94a3b8',fontSize:'0.8rem',marginBottom:'8px',display:'flex',alignItems:'center',gap:'6px',flexShrink:0}}>
+        <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#0ea5e9',display:'inline-block',animation:'pulse 1s infinite'}} />
+        シミュレーション実行中...
+      </p>
+      {messages.map((msg, i) => (
+        <div key={i} style={{
+          background:'rgba(124,58,237,0.08)',
+          border:'1px solid rgba(124,58,237,0.2)',
+          borderRadius:'12px',
+          padding:'10px 14px',
+          animation:'fadeIn 0.3s ease',
+          flexShrink:0,
+        }}>
+          <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}}>
+            <span style={{fontSize:'1.1rem'}}>👤</span>
+            <span style={{fontWeight:'bold',color:'#e2e8f0',fontSize:'0.85rem'}}>{msg.agent_name}</span>
+            <span style={{
+              fontSize:'0.7rem',
+              padding:'2px 6px',
+              borderRadius:'999px',
+              background: msg.action_type === '発言' ? 'rgba(14,165,233,0.15)' : 'rgba(124,58,237,0.15)',
+              color: msg.action_type === '発言' ? '#0ea5e9' : '#7c3aed',
+            }}>{msg.action_type}</span>
+            <span style={{marginLeft:'auto',fontSize:'0.7rem',color:'#94a3b8'}}>T{msg.turn}</span>
+          </div>
+          <p style={{color:'#cbd5e1',fontSize:'0.82rem',lineHeight:'1.5',margin:0}}>{msg.content}</p>
+          <p style={{color:'#64748b',fontSize:'0.72rem',margin:'4px 0 0',fontStyle:'italic'}}>感情: {msg.emotional_state}</p>
+        </div>
+      ))}
+      <div ref={messagesEndRef} />
     </div>
   )
 }

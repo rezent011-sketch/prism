@@ -320,6 +320,20 @@ def get_relationship_history(sim_id: int, db_path: str = DB_PATH) -> List[dict]:
              "trust_delta": r["trust_delta"], "sentiment": r["sentiment"], "reason": r["reason"]} for r in rows]
 
 
+def get_simulation(sim_id: int, db_path: str = DB_PATH) -> Optional[Simulation]:
+    """IDでシミュレーションを取得"""
+    conn = get_connection(db_path)
+    row = conn.execute("SELECT * FROM simulations WHERE id=?", (sim_id,)).fetchone()
+    conn.close()
+    if not row:
+        return None
+    return Simulation(
+        id=row["id"], seed_text=row["seed_text"], agent_count=row["agent_count"],
+        turn_count=row["turn_count"], status=row["status"],
+        created_at=row["created_at"], completed_at=row["completed_at"]
+    )
+
+
 def get_knowledge_nodes(sim_id: int, db_path: str = DB_PATH) -> List[dict]:
     """知識グラフノードを取得"""
     conn = get_connection(db_path)

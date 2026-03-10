@@ -7,13 +7,17 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
+import asyncio
+import json
 
 from prism.database import (
     init_db, create_simulation, update_simulation_status,
     list_simulations, get_agents, get_interactions, get_relations,
-    get_emotion_trajectory, get_relationship_history, get_knowledge_nodes
+    get_emotion_trajectory, get_relationship_history, get_knowledge_nodes,
+    get_simulation
 )
 from prism.models import Simulation
 from prism.agent_generator import generate_agents
@@ -156,6 +160,41 @@ def get_simulation_detail(sim_id: int):
             for i in interactions
         ],
     }
+
+
+@app.get("/api/simulations/{sim_id}/stream")
+async def stream_simulation(sim_id: int):
+    """シミュレーションの発言をSSEでリアルタイムストリーミング"""
+    async def event_generator():
+        sent_ids = set()
+        for _ in range(300):  # 最大300回（5分）ポーリング
+            interactions = get_interactions(sim_id)
+            for i in interactions:
+                if i.id not in sent_ids:
+                    sent_ids.add(i.id)
+                    data = json.dumps({
+                        "id": i.id,
+                        "turn": i.turn,
+                        "agent_name": i.agent_name,
+                        "content": i.content,
+                        "emotional_state": i.emotional_state,
+                        "action_type": i.action_type,
+                    }, ensure_ascii=False)
+                    yield f"data: {data}\n\n"
+
+            # シミュレーション完了チェック
+            sim = get_simulation(sim_id)
+            if sim and sim.status in ("completed", "failed"):
+                yield "event: done\ndata: {}\n\n"
+                break
+
+            await asyncio.sleep(1)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 # レポートをDBに保存するための簡易テーブル（reports）

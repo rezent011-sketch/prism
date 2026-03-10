@@ -149,6 +149,7 @@ export default function App() {
               onStart={startSimulation}
               loading={loading}
               runStatus={runStatus}
+              api={API}
             />
           )}
           {tab === 'list' && (
