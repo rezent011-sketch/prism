@@ -96,7 +96,7 @@ export default function RelationMap({ simId, api }) {
     if (!relations || relations.length === 0) return []
     const map = {}
     for (const r of relations) {
-      const fromName = r.agent_name_from || `エージェント${r.agent_id_from}`
+      const fromName = r.from_name || `エージェント${r.agent_id_from}`
       if (!map[fromName]) map[fromName] = { name: fromName, outgoing: [] }
       map[fromName].outgoing.push(r)
     }
@@ -163,7 +163,7 @@ export default function RelationMap({ simId, api }) {
                 </div>
                 <div className="space-y-2">
                   {agent.outgoing.map((rel, i) => {
-                    const toName = rel.agent_name_to || `エージェント${rel.agent_id_to}`
+                    const toName = rel.to_name || `エージェント${rel.agent_id_to}`
                     const style = getRelationStyle(rel.trust_score)
                     return (
                       <div

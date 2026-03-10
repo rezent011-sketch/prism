@@ -100,11 +100,11 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#050a14]">
       {/* ヘッダー（固定） */}
-      <header className="sticky top-0 z-50 bg-[#050a14]/90 backdrop-blur-md border-b border-[#7c3aed]/20 px-6 py-4">
+      <header className="sticky top-0 z-50 bg-[#050a14]/90 backdrop-blur-md border-b border-[#7c3aed]/20 px-3 sm:px-6 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold gradient-text">🔮 Prism</h1>
-            <span className="text-[#94a3b8] text-sm hidden sm:inline">群体知能シミュレーションエンジン</span>
+            <div style={{display:"flex",alignItems:"center",gap:"8px"}}><img src="/prism/logo.png" alt="Prism" style={{width:"28px",height:"28px",objectFit:"contain",flexShrink:0}} /><h1 className="text-xl font-bold gradient-text">Prism</h1></div>
+            <span className="text-[#94a3b8] text-xs hidden sm:inline">群体知能シミュレーションエンジン</span>
           </div>
           <a
             href="https://github.com/rezent011-sketch/prism"
@@ -120,7 +120,7 @@ export default function App() {
       </header>
 
       {/* タブナビゲーション */}
-      <nav className="border-b border-[#112240] px-6 bg-[#0d1b2e]/50">
+      <nav className="border-b border-[#112240] px-2 sm:px-6 bg-[#0d1b2e]/50 overflow-x-auto">
         <div className="max-w-7xl mx-auto flex">
           {TABS.map(t => (
             <button
@@ -129,7 +129,7 @@ export default function App() {
                 setTab(t.id)
                 if (t.id === 'list') fetchSimulations()
               }}
-              className={`px-5 py-3 text-sm font-medium border-b-2 transition-all duration-300 ${
+              className={`px-3 sm:px-5 py-3 text-xs sm:text-sm font-medium whitespace-nowrap border-b-2 transition-all duration-300 ${
                 tab === t.id
                   ? 'border-[#7c3aed] text-[#e2e8f0] bg-[#7c3aed]/10'
                   : 'border-transparent text-[#94a3b8] hover:text-[#e2e8f0] hover:bg-[#112240]/50'
@@ -142,7 +142,7 @@ export default function App() {
       </nav>
 
       {/* メインコンテンツ */}
-      <main className="p-6 max-w-7xl mx-auto">
+      <main className="p-3 sm:p-6 max-w-7xl mx-auto">
         <div className="fade-in" key={tab}>
           {tab === 'home' && (
             <SimulationForm
