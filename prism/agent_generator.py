@@ -52,15 +52,21 @@ JSON配列のみを返してください。他のテキストは不要です。"
 
     agents = []
     for data in agents_data:
+        # リスト型で返ってきた場合は文字列に変換
+        def to_str(v):
+            if isinstance(v, list):
+                return "、".join(str(x) for x in v)
+            return str(v) if v else ""
+
         agent = Agent(
             simulation_id=simulation_id,
-            name=data.get("name", "不明"),
+            name=to_str(data.get("name", "不明")),
             age=data.get("age", 30),
-            occupation=data.get("occupation", "不明"),
-            personality=data.get("personality", ""),
-            stance=data.get("stance", ""),
-            values=data.get("values", ""),
-            emotional_state=data.get("emotional_state", "中立"),
+            occupation=to_str(data.get("occupation", "不明")),
+            personality=to_str(data.get("personality", "")),
+            stance=to_str(data.get("stance", "")),
+            values=to_str(data.get("values", "")),
+            emotional_state=to_str(data.get("emotional_state", "中立")),
         )
         agent.id = save_agent(agent)
         agents.append(agent)
