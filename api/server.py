@@ -54,7 +54,9 @@ def _run_simulation_bg(sim_id: int, seed_text: str, agent_count: int, turn_count
         run_simulation(seed_text, agents, sim_id, turn_count)
         update_simulation_status(sim_id, "completed")
     except Exception as e:
-        print(f"❌ シミュレーション #{sim_id} 失敗: {e}")
+        import traceback
+        err = traceback.format_exc()
+        print(f"❌ シミュレーション #{sim_id} 失敗: {e}\n{err}")
         update_simulation_status(sim_id, "failed")
 
 
@@ -63,6 +65,17 @@ def health():
     """ヘルスチェック"""
     return {"status": "ok"}
 
+
+
+@app.get("/api/debug/test")
+def debug_test():
+    """APIキーと依存関係のデバッグ"""
+    import os
+    key = os.getenv("ANTHROPIC_API_KEY", "")
+    return {
+        "api_key_set": bool(key),
+        "api_key_prefix": key[:15] + "..." if key else "NOT SET"
+    }
 
 @app.post("/api/simulate", response_model=SimulateResponse)
 def simulate(req: SimulateRequest, background_tasks: BackgroundTasks):
