@@ -12,7 +12,8 @@ from typing import Optional
 
 from prism.database import (
     init_db, create_simulation, update_simulation_status,
-    list_simulations, get_agents, get_interactions, get_relations
+    list_simulations, get_agents, get_interactions, get_relations,
+    get_emotion_trajectory, get_relationship_history, get_knowledge_nodes
 )
 from prism.models import Simulation
 from prism.agent_generator import generate_agents
@@ -197,6 +198,28 @@ def _save_report(sim_id: int, text: str):
     )
     conn.commit()
     conn.close()
+
+
+@app.get("/api/simulations/{sim_id}/graph")
+def get_simulation_graph(sim_id: int):
+    """知識グラフのノードを返す"""
+    nodes = get_knowledge_nodes(sim_id)
+    return {"nodes": nodes}
+
+
+@app.get("/api/simulations/{sim_id}/emotions")
+def get_simulation_emotions(sim_id: int):
+    """全エージェントの感情曲線データを返す"""
+    emotions = get_emotion_trajectory(sim_id)
+    return {"emotions": emotions}
+
+
+@app.get("/api/simulations/{sim_id}/relationships")
+def get_simulation_relationships(sim_id: int):
+    """関係性履歴を返す"""
+    history = get_relationship_history(sim_id)
+    relations = get_relations(sim_id)
+    return {"history": history, "relations": relations}
 
 
 @app.get("/api/simulations/{sim_id}/relations")

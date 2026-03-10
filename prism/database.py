@@ -70,6 +70,31 @@ def init_db(db_path: str = DB_PATH):
             created_at TEXT,
             FOREIGN KEY (agent_id) REFERENCES agents(id)
         );
+        CREATE TABLE IF NOT EXISTS emotion_trajectory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            agent_id INTEGER,
+            simulation_id INTEGER,
+            turn INTEGER,
+            emotion TEXT,
+            intensity REAL DEFAULT 0.5
+        );
+        CREATE TABLE IF NOT EXISTS relationship_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            simulation_id INTEGER,
+            agent_id INTEGER,
+            target_name TEXT,
+            turn INTEGER,
+            trust_delta REAL,
+            sentiment TEXT,
+            reason TEXT
+        );
+        CREATE TABLE IF NOT EXISTS knowledge_nodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            simulation_id INTEGER,
+            label TEXT,
+            content TEXT,
+            node_type TEXT
+        );
     """)
     conn.commit()
     conn.close()
@@ -264,3 +289,42 @@ def get_agent_relations(agent_id: int, sim_id: int, db_path: str = DB_PATH) -> L
     ).fetchall()
     conn.close()
     return [{"name": r["name"], "trust_score": r["trust_score"]} for r in rows]
+
+
+def get_emotion_trajectory(sim_id: int, db_path: str = DB_PATH) -> List[dict]:
+    """感情曲線データを取得"""
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        """SELECT et.*, a.name as agent_name FROM emotion_trajectory et
+           JOIN agents a ON et.agent_id = a.id
+           WHERE et.simulation_id=? ORDER BY et.turn, et.agent_id""",
+        (sim_id,)
+    ).fetchall()
+    conn.close()
+    return [{"agent_id": r["agent_id"], "agent_name": r["agent_name"],
+             "turn": r["turn"], "emotion": r["emotion"], "intensity": r["intensity"]} for r in rows]
+
+
+def get_relationship_history(sim_id: int, db_path: str = DB_PATH) -> List[dict]:
+    """関係性履歴を取得"""
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        """SELECT rh.*, a.name as agent_name FROM relationship_history rh
+           JOIN agents a ON rh.agent_id = a.id
+           WHERE rh.simulation_id=? ORDER BY rh.turn""",
+        (sim_id,)
+    ).fetchall()
+    conn.close()
+    return [{"agent_id": r["agent_id"], "agent_name": r["agent_name"],
+             "target_name": r["target_name"], "turn": r["turn"],
+             "trust_delta": r["trust_delta"], "sentiment": r["sentiment"], "reason": r["reason"]} for r in rows]
+
+
+def get_knowledge_nodes(sim_id: int, db_path: str = DB_PATH) -> List[dict]:
+    """知識グラフノードを取得"""
+    conn = get_connection(db_path)
+    rows = conn.execute(
+        "SELECT * FROM knowledge_nodes WHERE simulation_id=?", (sim_id,)
+    ).fetchall()
+    conn.close()
+    return [{"id": r["id"], "label": r["label"], "content": r["content"], "node_type": r["node_type"]} for r in rows]
