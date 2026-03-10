@@ -41,7 +41,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
   }
 
   return (
-    <div style={{maxWidth:"1200px",margin:"0 auto"}}>
+    <div>
       {/* ヒーロー文言 */}
       <div style={{textAlign:"center",marginBottom:"32px",padding:"0 24px"}}>
         <h2 className="text-3xl md:text-4xl font-bold mb-2">
@@ -53,7 +53,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
       {/* 2カラムレイアウト */}
       <div className="flex flex-col lg:flex-row gap-6">
         {/* 左: 入力パネル (40%) */}
-        <form onSubmit={handleSubmit} className="lg:w-2/5 space-y-5">
+        <form onSubmit={handleSubmit} className="lg:w-5/12 space-y-5">
           {/* シナリオ入力 */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">シナリオ入力</label>
@@ -139,7 +139,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
         </form>
 
         {/* 右: プレビューパネル (60%) */}
-        <div className="lg:w-3/5 bg-[#0d1b2e] border border-[#112240] rounded-xl p-6 min-h-[400px] flex items-center justify-center">
+        <div className="lg:w-7/12 bg-[#0d1b2e] border border-[#112240] rounded-xl p-6 min-h-[400px] flex items-center justify-center">
           {!loading && !runStatus && (
             <PreviewIdle />
           )}

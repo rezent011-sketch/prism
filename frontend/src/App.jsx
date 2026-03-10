@@ -101,7 +101,7 @@ export default function App() {
     <div className="min-h-screen bg-[#050a14]">
       {/* ヘッダー（固定） */}
       <header className="sticky top-0 z-50 bg-[#050a14]/90 backdrop-blur-md border-b border-[#7c3aed]/20 px-3 sm:px-6 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%"}}>
           <div className="flex items-center gap-3">
             <div style={{display:"flex",alignItems:"center",gap:"8px"}}><img src="/prism/logo.png" alt="Prism" style={{width:"28px",height:"28px",objectFit:"contain",flexShrink:0}} /><h1 className="text-xl font-bold gradient-text">Prism</h1></div>
             <span className="text-[#94a3b8] text-xs hidden sm:inline">群体知能シミュレーションエンジン</span>
@@ -121,7 +121,7 @@ export default function App() {
 
       {/* タブナビゲーション */}
       <nav className="border-b border-[#112240] px-2 sm:px-6 bg-[#0d1b2e]/50 overflow-x-auto">
-        <div className="max-w-7xl mx-auto flex">
+        <div className="flex px-2 sm:px-8">
           {TABS.map(t => (
             <button
               key={t.id}
@@ -142,7 +142,7 @@ export default function App() {
       </nav>
 
       {/* メインコンテンツ */}
-      <main className="p-3 sm:p-6 max-w-7xl mx-auto">
+      <main className="p-4 sm:p-8">
         <div className="fade-in" key={tab}>
           {tab === 'home' && (
             <SimulationForm
