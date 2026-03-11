@@ -121,15 +121,21 @@ function NetworkGraph({ messages, onNodeClick }) {
 /**
  * 新規シミュレーションフォーム（MiroFish風）
  */
-export default function SimulationForm({ onStart, loading, runStatus, api }) {
+export default function SimulationForm({ onStart, loading, runStatus, api, apiKey: apiKeyProp }) {
   const [seed, setSeed] = useState('')
   const [agentCount, setAgentCount] = useState(15)
   const [turnCount, setTurnCount] = useState(10)
+  const apiKey = apiKeyProp || localStorage.getItem('prism_api_key') || ''
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    const apiKey = localStorage.getItem('prism_api_key')
+    if (!apiKey) {
+      alert('APIキーを設定してからシミュレーションを実行してください。\n画面上部の赤いボックスでAPIキーを設定できます。')
+      return
+    }
     if (!seed.trim()) return
-    onStart(seed, agentCount, turnCount)
+    onStart(seed, agentCount, turnCount, apiKey)
   }
 
   const isRunning = loading && runStatus
@@ -241,8 +247,9 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
 
           <button
             type="submit"
-            disabled={loading || !seed.trim()}
+            disabled={loading || !seed.trim() || !apiKey}
             className="w-full py-4 rounded-xl font-bold text-white text-lg btn-gradient"
+            style={{opacity: (!seed.trim() || !apiKey) ? 0.5 : 1, cursor: (!seed.trim() || !apiKey) ? 'not-allowed' : 'pointer'}}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-3">

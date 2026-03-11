@@ -48,12 +48,13 @@ export default function App() {
   }
 
   // シミュレーション開始
-  const startSimulation = async (seed, agentCount, turnCount) => {
+  const startSimulation = async (seed, agentCount, turnCount, apiKeyFromForm) => {
     setLoading(true)
     setRunStatus({ phase: 'starting', turn: 0, totalTurns: turnCount, simId: null })
+    const keyToUse = apiKeyFromForm || apiKey
     try {
       const simHeaders = { 'Content-Type': 'application/json' }
-      if (apiKey) simHeaders['X-API-Key'] = apiKey
+      if (keyToUse) simHeaders['X-API-Key'] = keyToUse
       const res = await fetch(`${API}/simulate`, {
         method: 'POST',
         headers: simHeaders,
@@ -172,13 +173,14 @@ export default function App() {
           {tab === 'home' && (
             <div style={{display:'flex',flexDirection:'column',flex:1,minHeight:0}}>
               {!loading && (
-                <ApiKeySettings onSave={(k) => setApiKey(k)} />
+                <ApiKeySettings onKeyChange={(k) => setApiKey(k)} />
               )}
               <SimulationForm
                 onStart={startSimulation}
                 loading={loading}
                 runStatus={runStatus}
                 api={API}
+                apiKey={apiKey}
               />
             </div>
           )}

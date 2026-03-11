@@ -53,27 +53,27 @@ class SimulateResponse(BaseModel):
 # バックグラウンドでシミュレーションを実行
 def _run_simulation_bg(sim_id: int, seed_text: str, agent_count: int, turn_count: int, api_key: str = ""):
     """バックグラウンドタスク: シミュレーション実行"""
-    original_key = ""
+    if not api_key:
+        update_simulation_status(sim_id, "failed")
+        return
+    original_key = os.environ.get("ANTHROPIC_API_KEY", "")
     try:
-        if api_key:
-            original_key = os.environ.get("ANTHROPIC_API_KEY", "")
-            os.environ["ANTHROPIC_API_KEY"] = api_key
+        os.environ["ANTHROPIC_API_KEY"] = api_key
         print(f"[sim_{sim_id}] 開始: agent_count={agent_count}, turn_count={turn_count}")
+        init_db()
         update_simulation_status(sim_id, "running")
         agents = generate_agents(seed_text, sim_id, agent_count)
         print(f"[sim_{sim_id}] エージェント生成完了: {len(agents)}体")
         run_simulation(seed_text, agents, sim_id, turn_count, enable_memory=False, enable_graph=False)
         update_simulation_status(sim_id, "completed")
         print(f"[sim_{sim_id}] 完了")
-        if api_key:
-            os.environ["ANTHROPIC_API_KEY"] = original_key
     except Exception as e:
         import traceback
         err = traceback.format_exc()
         print(f"[sim_{sim_id}] エラー: {e}\n{err}")
         update_simulation_status(sim_id, "failed")
-        if api_key:
-            os.environ["ANTHROPIC_API_KEY"] = original_key
+    finally:
+        os.environ["ANTHROPIC_API_KEY"] = original_key
 
 
 @app.get("/api/health")
@@ -96,6 +96,8 @@ def debug_test():
 @app.post("/api/simulate", response_model=SimulateResponse)
 def simulate(req: SimulateRequest, background_tasks: BackgroundTasks, x_api_key: Optional[str] = Header(None)):
     """シミュレーションを開始（バックグラウンド実行）"""
+    if not x_api_key:
+        raise HTTPException(status_code=403, detail="APIキーが必要です。Anthropic APIキーをリクエストヘッダーに設定してください。")
     sim = Simulation(
         seed_text=req.seed,
         agent_count=max(5, min(1000, req.agent_count)),
@@ -103,8 +105,7 @@ def simulate(req: SimulateRequest, background_tasks: BackgroundTasks, x_api_key:
         status="created",
     )
     sim_id = create_simulation(sim)
-    api_key_to_use = x_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-    background_tasks.add_task(_run_simulation_bg, sim_id, req.seed, sim.agent_count, sim.turn_count, api_key_to_use)
+    background_tasks.add_task(_run_simulation_bg, sim_id, req.seed, sim.agent_count, sim.turn_count, x_api_key)
     return {"simulation_id": sim_id}
 
 
