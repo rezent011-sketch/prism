@@ -5,7 +5,7 @@ import os
 # プロジェクトルートをパスに追加
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -329,6 +329,29 @@ async def global_survey(sim_id: int, req: dict):
     return {"question": question, "results": results}
 
 
+@app.post("/api/simulations/{sim_id}/report_chat")
+async def report_chat(sim_id: int, req: dict):
+    """レポートの内容についてAIと対話"""
+    question = req.get("question", "")
+    history = req.get("history", [])  # [{role, content}]
+
+    report_content = _get_report(sim_id)
+    if not report_content:
+        report_content = "レポートがまだ生成されていません"
+
+    from prism.llm import call_claude
+    system = f"""あなたはシミュレーション分析の専門家です。
+以下のレポートについて質問に答えてください。
+
+【レポート】
+{report_content[:2000]}
+
+簡潔かつ具体的に答えてください。"""
+
+    response = call_claude(system, question, 512)
+    return {"response": response}
+
+
 @app.post("/api/simulations/{sim_id}/report")
 def create_report(sim_id: int):
     """レポートを生成してDBに保存"""
@@ -342,3 +365,29 @@ def create_report(sim_id: int):
     text = generate_report(sim_id)
     _save_report(sim_id, text)
     return {"report_text": text}
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile):
+    """テキストファイルをアップロードしてシナリオとして使用"""
+    content_bytes = await file.read()
+    filename = file.filename.lower() if file.filename else ""
+    text = content_bytes.decode('utf-8', errors='ignore')
+    text = text[:3000] if len(text) > 3000 else text
+    return {"text": text, "filename": file.filename, "chars": len(text)}
+
+@app.post("/api/simulations/{sim_id}/inject")
+async def inject_variable(sim_id: int, req: dict):
+    """シミュレーションに外部イベントを注入する"""
+    event = req.get("event", "")
+    if not event:
+        return {"status": "error", "message": "イベントが空です"}
+    import sqlite3 as _sq3, datetime
+    db_path = os.environ.get("DB_PATH", "prism.db")
+    conn = _sq3.connect(db_path)
+    conn.execute(
+        "INSERT INTO interactions (simulation_id, turn, agent_id, agent_name, action_type, content, emotional_state, created_at) VALUES (?,?,?,?,?,?,?,?)",
+        (sim_id, 0, -1, "システム", "環境変化", event, "中立", datetime.datetime.now().isoformat())
+    )
+    conn.commit()
+    conn.close()
+    return {"status": "injected", "event": event}

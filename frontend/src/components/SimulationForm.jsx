@@ -157,6 +157,34 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
               placeholder="シミュレーションのシナリオを入力してください..."
               className="w-full bg-[#0d1b2e] border border-[#112240] rounded-xl p-4 text-sm text-[#e2e8f0] focus:outline-none textarea-glow resize-none transition-all duration-300"
             />
+            {/* ファイルアップロード */}
+            <div style={{marginTop:'8px'}}>
+              <label style={{
+                display:'inline-flex',alignItems:'center',gap:'8px',
+                padding:'6px 14px',borderRadius:'8px',
+                border:'1px dashed rgba(124,58,237,0.5)',
+                color:'#94a3b8',fontSize:'0.8rem',cursor:'pointer',
+                background:'rgba(124,58,237,0.05)',
+              }}>
+                <input
+                  type="file"
+                  accept=".txt,.md,.pdf"
+                  style={{display:'none'}}
+                  onChange={async (e) => {
+                    const file = e.target.files[0]
+                    if (!file) return
+                    const form = new FormData()
+                    form.append('file', file)
+                    try {
+                      const res = await fetch(`${api}/upload`, {method:'POST', body: form})
+                      const data = await res.json()
+                      setSeed(data.text)
+                    } catch {}
+                  }}
+                />
+                ファイルを読み込む (.txt / .md / .pdf)
+              </label>
+            </div>
           </div>
 
           <div>
@@ -187,12 +215,12 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
               <span className="text-[#7c3aed] font-bold text-base">{agentCount}</span>
             </label>
             <input
-              type="range" min={5} max={100} value={agentCount}
+              type="range" min={5} max={1000} value={agentCount}
               onChange={e => setAgentCount(Number(e.target.value))}
               className="w-full accent-[#7c3aed] h-2"
             />
             <div className="flex justify-between text-xs text-[#94a3b8] mt-1">
-              <span>5</span><span>100</span>
+              <span>5</span><span>1000</span>
             </div>
           </div>
 
@@ -202,12 +230,12 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
               <span className="text-[#0ea5e9] font-bold text-base">{turnCount}</span>
             </label>
             <input
-              type="range" min={3} max={20} value={turnCount}
+              type="range" min={3} max={50} value={turnCount}
               onChange={e => setTurnCount(Number(e.target.value))}
               className="w-full accent-[#0ea5e9] h-2"
             />
             <div className="flex justify-between text-xs text-[#94a3b8] mt-1">
-              <span>3</span><span>20</span>
+              <span>3</span><span>50</span>
             </div>
           </div>
 
@@ -222,9 +250,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
                 実行中...
               </span>
             ) : (
-              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-                <img src="/prism/logo.png" alt="" style={{ width: "22px", height: "22px", objectFit: "contain" }} /> シミュレーション開始
-              </span>
+              <span>シミュレーション開始</span>
             )}
           </button>
         </form>
@@ -287,6 +313,7 @@ function PreviewRunning({ simId, api, runStatus }) {
   const [interviewQ, setInterviewQ] = useState('')
   const [interviewHistory, setInterviewHistory] = useState([])
   const [interviewLoading, setInterviewLoading] = useState(false)
+  const [injectText, setInjectText] = useState('')
   const chatEndRef = useRef(null)
   const logEndRef = useRef(null)
   const { phase, turn, totalTurns } = runStatus || {}
@@ -376,25 +403,26 @@ function PreviewRunning({ simId, api, runStatus }) {
           <div style={{ flex: 1, minHeight: 0 }}>
             <NetworkGraph messages={messages} onNodeClick={(name) => { setSelectedAgent(name); setInterviewHistory([]) }} />
           </div>
-          {/* 選択エージェント情報パネル */}
-          <div style={{ height: '120px', flexShrink: 0, borderTop: '1px solid rgba(124,58,237,0.15)', padding: '8px 12px', overflowY: 'auto', background: 'rgba(13,27,46,0.8)' }}>
+          {/* 選択エージェント詳細パネル */}
+          <div style={{ height: '110px', flexShrink: 0, borderTop: '1px solid rgba(124,58,237,0.15)', padding: '8px 12px', overflowY: 'auto', background: 'rgba(13,27,46,0.8)' }}>
             {selectedAgent ? (
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: COLORS[uniqueAgents.indexOf(selectedAgent) % COLORS.length], display: 'inline-block' }} />
-                  <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '0.85rem' }}>{selectedAgent}</span>
+                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: COLORS[uniqueAgents.indexOf(selectedAgent) % COLORS.length], flexShrink: 0 }} />
+                  <span style={{ fontWeight: 'bold', color: '#e2e8f0', fontSize: '0.85rem' }}>{selectedAgent}</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.7rem', marginLeft: 'auto' }}>発言 {agentMessages.length}件</span>
                 </div>
-                <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>
-                  発言数: {agentMessages.length} | 最新感情: {agentMessages[agentMessages.length - 1]?.emotional_state || '-'}
-                </div>
-                <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: '4px' }}>
-                  最新: {agentMessages[agentMessages.length - 1]?.content?.slice(0, 80) || '-'}
-                </div>
+                {/* 直近の発言リスト（最新3件） */}
+                {messages.filter(m => m.agent_name === selectedAgent).slice(-3).map((m, i) => (
+                  <div key={i} style={{ color: '#94a3b8', fontSize: '0.72rem', lineHeight: '1.4', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    [T{m.turn}] {parseContent(m.content)?.slice(0, 60)}...
+                  </div>
+                ))}
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                <p style={{ color: '#64748b', fontSize: '0.75rem' }}>ノードをクリックしてエージェントを選択</p>
-              </div>
+              <p style={{ color: '#64748b', fontSize: '0.75rem', textAlign: 'center', marginTop: '20px' }}>
+                グラフのノードをクリックするとエージェントの詳細が表示されます
+              </p>
             )}
           </div>
         </div>

@@ -62,12 +62,38 @@ export default function SimulationDetail({ detail, api }) {
 }
 
 function InteractiveTools({ simId, agents, api }) {
-  const [tab, setTab] = useState('interview')
+  const [tab, setTab] = useState('report_chat')
   const [selectedAgent, setSelectedAgent] = useState(agents[0]?.name || '')
   const [question, setQuestion] = useState('')
   const [interviewHistory, setInterviewHistory] = useState([])
   const [surveyResults, setSurveyResults] = useState(null)
   const [loading, setLoading] = useState(false)
+
+  // レポートチャット state
+  const [chatHistory, setChatHistory] = useState([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+
+  const sendReportChat = async () => {
+    if (!chatInput.trim() || chatLoading) return
+    const q = chatInput
+    setChatInput('')
+    setChatLoading(true)
+    setChatHistory(h => [...h, { role: 'user', content: q }])
+    try {
+      const res = await fetch(`${api}/simulations/${simId}/report_chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q, history: chatHistory }),
+      })
+      const data = await res.json()
+      setChatHistory(h => [...h, { role: 'assistant', content: data.response }])
+    } catch {
+      setChatHistory(h => [...h, { role: 'assistant', content: '通信エラーが発生しました' }])
+    } finally {
+      setChatLoading(false)
+    }
+  }
 
   const sendInterview = async () => {
     if (!question.trim() || !selectedAgent || loading) return
@@ -108,8 +134,9 @@ function InteractiveTools({ simId, agents, api }) {
   }
 
   const tabs = [
-    { id: 'interview', label: ' エージェントインタビュー' },
-    { id: 'survey', label: ' アンケートを送る' },
+    { id: 'report_chat', label: 'レポートと話す' },
+    { id: 'interview', label: 'エージェントインタビュー' },
+    { id: 'survey', label: 'アンケート' },
   ]
 
   return (
@@ -126,6 +153,43 @@ function InteractiveTools({ simId, agents, api }) {
           }}>{t.label}</button>
         ))}
       </div>
+
+      {/* レポートチャット */}
+      {tab === 'report_chat' && (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '300px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {chatHistory.length === 0 && (
+              <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', marginTop: '20px' }}>
+                レポートについて質問してください
+              </p>
+            )}
+            {chatHistory.map((m, i) => (
+              <div key={i} style={{
+                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
+                background: m.role === 'user' ? 'rgba(124,58,237,0.3)' : 'rgba(14,165,233,0.1)',
+                border: `1px solid ${m.role === 'user' ? 'rgba(124,58,237,0.4)' : 'rgba(14,165,233,0.2)'}`,
+                borderRadius: '12px', padding: '8px 12px',
+                maxWidth: '80%', fontSize: '0.82rem', color: '#e2e8f0',
+              }}>{m.content}</div>
+            ))}
+            {chatLoading && <div style={{ alignSelf: 'flex-start', color: '#94a3b8', fontSize: '0.8rem' }}>回答中...</div>}
+          </div>
+          <div style={{ display: 'flex', gap: '8px', padding: '8px', borderTop: '1px solid rgba(124,58,237,0.2)', flexShrink: 0 }}>
+            <input
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && sendReportChat()}
+              placeholder="レポートについて質問..."
+              style={{ flex: 1, background: '#0d1b2e', border: '1px solid rgba(124,58,237,0.3)', borderRadius: '8px', padding: '8px 12px', color: '#e2e8f0', fontSize: '0.8rem', outline: 'none' }}
+            />
+            <button
+              onClick={sendReportChat}
+              disabled={chatLoading}
+              style={{ background: 'rgba(124,58,237,0.4)', border: 'none', borderRadius: '8px', padding: '8px 16px', color: 'white', cursor: 'pointer', fontSize: '0.8rem' }}
+            >送信</button>
+          </div>
+        </div>
+      )}
 
       {/* インタビュー */}
       {tab === 'interview' && (
