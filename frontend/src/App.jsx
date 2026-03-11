@@ -121,7 +121,7 @@ export default function App() {
 
       {/* タブナビゲーション */}
       <nav className="border-b border-[#112240] px-2 sm:px-6 bg-[#0d1b2e]/50 overflow-x-auto">
-        <div className="flex px-2 sm:px-8">
+        <div className="flex px-2 sm:px-4">
           {TABS.map(t => (
             <button
               key={t.id}
@@ -142,7 +142,7 @@ export default function App() {
       </nav>
 
       {/* メインコンテンツ */}
-      <main className="p-4 sm:p-8" style={loading ? {height:"calc(100vh - 90px)", overflow:"hidden", display:"flex", flexDirection:"column"} : {}}>
+      <main style={{padding: loading ? "12px 24px" : "24px 32px", ...(loading ? {height:"calc(100vh - 96px)", overflow:"hidden", display:"flex", flexDirection:"column"} : {})}}>
         <div className="fade-in" key={tab}>
           {tab === 'home' && (
             <SimulationForm
