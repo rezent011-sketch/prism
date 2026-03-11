@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import * as d3 from 'd3'
 
 // プリセットシナリオ
 const PRESETS = [
@@ -188,96 +187,57 @@ function PreviewIdle() {
   )
 }
 
-/** D3ノードグラフコンポーネント */
+/** 軽量版エージェントグラフ（D3不使用） */
 function AgentGraph({ messages }) {
-  const svgRef = useRef(null)
-  const simRef = useRef(null)
-  const nodesRef = useRef([])
-  const linksRef = useRef([])
-  const activeRef = useRef(null)
-
-  useEffect(() => {
-    if (!svgRef.current) return
-    const svg = d3.select(svgRef.current)
-    svg.selectAll('*').remove()
-    const w = 300, h = 350
-    svg.attr('viewBox', `0 0 ${w} ${h}`)
-
-    const linkG = svg.append('g')
-    const nodeG = svg.append('g')
-    const color = d3.scaleOrdinal(d3.schemeCategory10)
-
-    const sim = d3.forceSimulation()
-      .force('link', d3.forceLink().id(d => d.id).distance(80))
-      .force('charge', d3.forceManyBody().strength(-120))
-      .force('center', d3.forceCenter(w / 2, h / 2))
-      .force('collision', d3.forceCollide(30))
-
-    simRef.current = { sim, linkG, nodeG, color, w, h }
-    return () => sim.stop()
-  }, [])
-
-  useEffect(() => {
-    if (!simRef.current || messages.length === 0) return
-    const { sim, linkG, nodeG, color } = simRef.current
-    const last = messages[messages.length - 1]
-    const name = last.agent_name
-
-    // Add node if new
-    if (!nodesRef.current.find(n => n.id === name)) {
-      nodesRef.current.push({ id: name })
+  const agents = []
+  const seen = new Set()
+  for (const msg of messages) {
+    if (!seen.has(msg.agent_name)) {
+      seen.add(msg.agent_name)
+      agents.push(msg.agent_name)
+      if (agents.length >= 12) break
     }
+  }
 
-    // Add link between consecutive speakers
-    if (messages.length >= 2) {
-      const prev = messages[messages.length - 2].agent_name
-      if (prev !== name) {
-        linksRef.current.push({ source: prev, target: name })
-      }
-    }
+  const cx = 140, cy = 140, r = 100
+  const positions = agents.map((name, i) => {
+    const angle = (i / agents.length) * 2 * Math.PI - Math.PI / 2
+    return { name, x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) }
+  })
 
-    activeRef.current = name
+  const recentMessages = messages.slice(-10)
+  const COLORS = ['#7c3aed','#0ea5e9','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6','#f43f5e']
 
-    // Update simulation
-    sim.nodes(nodesRef.current)
-    sim.force('link').links(linksRef.current)
-    sim.alpha(0.3).restart()
-
-    // Draw links
-    const link = linkG.selectAll('line').data(linksRef.current)
-    link.enter().append('line')
-      .attr('stroke', 'rgba(124,58,237,0.3)')
-      .attr('stroke-width', 1)
-    link.exit().remove()
-
-    // Draw nodes
-    const node = nodeG.selectAll('g.node').data(nodesRef.current, d => d.id)
-    const enter = node.enter().append('g').attr('class', 'node')
-    enter.append('circle').attr('r', 20).attr('fill', d => color(d.id)).attr('opacity', 0.8)
-    enter.append('text').text(d => d.id.slice(0, 4))
-      .attr('text-anchor', 'middle').attr('dy', '0.35em')
-      .attr('fill', '#fff').attr('font-size', '10px').attr('pointer-events', 'none')
-    node.exit().remove()
-
-    // Pulse active node
-    nodeG.selectAll('g.node').select('circle')
-      .transition().duration(200)
-      .attr('r', d => d.id === activeRef.current ? 28 : 20)
-      .attr('opacity', d => d.id === activeRef.current ? 1 : 0.8)
-      .transition().duration(400)
-      .attr('r', 20).attr('opacity', 0.8)
-
-    sim.on('tick', () => {
-      linkG.selectAll('line')
-        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x).attr('y2', d => d.target.y)
-      nodeG.selectAll('g.node')
-        .attr('transform', d => `translate(${d.x},${d.y})`)
-    })
-  }, [messages])
+  if (agents.length === 0) {
+    return (
+      <div style={{width:'280px',height:'280px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <p style={{color:'#94a3b8',fontSize:'0.75rem'}}>エージェント待機中...</p>
+      </div>
+    )
+  }
 
   return (
-    <svg ref={svgRef} style={{width:'100%',height:'100%',background:'transparent'}} />
+    <svg width="280" height="280" style={{flexShrink:0}}>
+      {recentMessages.map((msg, i) => {
+        const fromIdx = agents.indexOf(msg.agent_name)
+        if (fromIdx === -1) return null
+        const from = positions[fromIdx]
+        const toIdx = (fromIdx + 1) % positions.length
+        const to = positions[toIdx]
+        return <line key={i} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="rgba(124,58,237,0.3)" strokeWidth="1" />
+      })}
+      {positions.map((pos, i) => {
+        const isLatest = messages.length > 0 && messages[messages.length - 1].agent_name === pos.name
+        const color = COLORS[i % COLORS.length]
+        return (
+          <g key={pos.name}>
+            {isLatest && <circle cx={pos.x} cy={pos.y} r="24" fill="none" stroke={color} strokeWidth="2" opacity="0.6" style={{animation:'pulse 1s ease-in-out infinite'}} />}
+            <circle cx={pos.x} cy={pos.y} r="18" fill={color} opacity="0.9" />
+            <text x={pos.x} y={pos.y + 4} textAnchor="middle" fill="white" fontSize="9" fontWeight="bold">{pos.name.slice(0, 3)}</text>
+          </g>
+        )
+      })}
+    </svg>
   )
 }
 
@@ -317,13 +277,13 @@ function PreviewRunning({ simId, api, runStatus }) {
       : Math.min(15 + ((turn || 0) / (totalTurns || 1)) * 85, 95)
 
     return (
-      <div className="w-full max-w-md text-center">
-        <div className="spinner mx-auto mb-6" style={{ width: 48, height: 48, borderWidth: 4 }} />
-        <p className="text-[#e2e8f0] text-lg font-bold mb-4">{statusText}</p>
-        <div className="w-full bg-[#112240] rounded-full h-3 overflow-hidden">
-          <div className="progress-bar h-full rounded-full transition-all duration-1000" style={{ width: `${progress}%` }} />
+      <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px'}}>
+        <div className="spinner" style={{width:48,height:48,borderWidth:4,marginBottom:'24px'}} />
+        <p style={{color:'#e2e8f0',fontSize:'1.1rem',fontWeight:'bold',marginBottom:'16px',textAlign:'center'}}>{statusText}</p>
+        <div style={{width:'100%',maxWidth:'320px',background:'#112240',borderRadius:'9999px',height:'12px',overflow:'hidden'}}>
+          <div className="progress-bar" style={{height:'100%',borderRadius:'9999px',width:`${progress}%`,transition:'width 1s ease'}} />
         </div>
-        <p className="text-[#94a3b8] text-sm mt-3">{Math.round(progress)}% 完了</p>
+        <p style={{color:'#94a3b8',fontSize:'0.85rem',marginTop:'12px'}}>{Math.round(progress)}% 完了</p>
       </div>
     )
   }
