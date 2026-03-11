@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import SimulationForm from './components/SimulationForm'
 import SimulationList from './components/SimulationList'
 import SimulationDetail from './components/SimulationDetail'
+import ApiKeySettings from './components/ApiKeySettings'
 
 // API ベースURL
 const API_BASE = import.meta.env.VITE_API_URL || 'https://prism-n5z8.onrender.com'
@@ -21,6 +22,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   // シミュレーション実行中のステータス表示用
   const [runStatus, setRunStatus] = useState(null) // null | { phase, turn, totalTurns, simId }
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('prism_api_key') || '')
 
   // シミュレーション一覧を取得
   const fetchSimulations = async () => {
@@ -50,9 +52,11 @@ export default function App() {
     setLoading(true)
     setRunStatus({ phase: 'starting', turn: 0, totalTurns: turnCount, simId: null })
     try {
+      const simHeaders = { 'Content-Type': 'application/json' }
+      if (apiKey) simHeaders['X-API-Key'] = apiKey
       const res = await fetch(`${API}/simulate`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: simHeaders,
         body: JSON.stringify({ seed, agent_count: agentCount, turn_count: turnCount }),
       })
       const data = await res.json()
@@ -166,12 +170,17 @@ export default function App() {
       <main style={loading ? {padding:"12px 24px",flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column"} : {padding:"24px 32px",flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         <div className="fade-in" key={tab} style={{flex:1,minHeight:0,display:"flex",flexDirection:"column",overflowY:"auto"}}>
           {tab === 'home' && (
-            <SimulationForm
-              onStart={startSimulation}
-              loading={loading}
-              runStatus={runStatus}
-              api={API}
-            />
+            <div style={{display:'flex',flexDirection:'column',flex:1,minHeight:0}}>
+              {!loading && (
+                <ApiKeySettings onSave={(k) => setApiKey(k)} />
+              )}
+              <SimulationForm
+                onStart={startSimulation}
+                loading={loading}
+                runStatus={runStatus}
+                api={API}
+              />
+            </div>
           )}
           {tab === 'list' && (
             <SimulationList

@@ -5,7 +5,7 @@ import os
 # プロジェクトルートをパスに追加
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, BackgroundTasks, UploadFile, HTTPException
+from fastapi import FastAPI, BackgroundTasks, UploadFile, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -51,9 +51,13 @@ class SimulateResponse(BaseModel):
 
 
 # バックグラウンドでシミュレーションを実行
-def _run_simulation_bg(sim_id: int, seed_text: str, agent_count: int, turn_count: int):
+def _run_simulation_bg(sim_id: int, seed_text: str, agent_count: int, turn_count: int, api_key: str = ""):
     """バックグラウンドタスク: シミュレーション実行"""
+    original_key = ""
     try:
+        if api_key:
+            original_key = os.environ.get("ANTHROPIC_API_KEY", "")
+            os.environ["ANTHROPIC_API_KEY"] = api_key
         print(f"[sim_{sim_id}] 開始: agent_count={agent_count}, turn_count={turn_count}")
         update_simulation_status(sim_id, "running")
         agents = generate_agents(seed_text, sim_id, agent_count)
@@ -61,11 +65,15 @@ def _run_simulation_bg(sim_id: int, seed_text: str, agent_count: int, turn_count
         run_simulation(seed_text, agents, sim_id, turn_count, enable_memory=False, enable_graph=False)
         update_simulation_status(sim_id, "completed")
         print(f"[sim_{sim_id}] 完了")
+        if api_key:
+            os.environ["ANTHROPIC_API_KEY"] = original_key
     except Exception as e:
         import traceback
         err = traceback.format_exc()
         print(f"[sim_{sim_id}] エラー: {e}\n{err}")
         update_simulation_status(sim_id, "failed")
+        if api_key:
+            os.environ["ANTHROPIC_API_KEY"] = original_key
 
 
 @app.get("/api/health")
@@ -86,7 +94,7 @@ def debug_test():
     }
 
 @app.post("/api/simulate", response_model=SimulateResponse)
-def simulate(req: SimulateRequest, background_tasks: BackgroundTasks):
+def simulate(req: SimulateRequest, background_tasks: BackgroundTasks, x_api_key: Optional[str] = Header(None)):
     """シミュレーションを開始（バックグラウンド実行）"""
     sim = Simulation(
         seed_text=req.seed,
@@ -95,7 +103,8 @@ def simulate(req: SimulateRequest, background_tasks: BackgroundTasks):
         status="created",
     )
     sim_id = create_simulation(sim)
-    background_tasks.add_task(_run_simulation_bg, sim_id, req.seed, sim.agent_count, sim.turn_count)
+    api_key_to_use = x_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+    background_tasks.add_task(_run_simulation_bg, sim_id, req.seed, sim.agent_count, sim.turn_count, api_key_to_use)
     return {"simulation_id": sim_id}
 
 
