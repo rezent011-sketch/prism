@@ -43,7 +43,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
   const isRunning = loading && runStatus
 
   return (
-    <div style={loading ? {display:"flex",flexDirection:"column",flex:"1 1 0",minHeight:0,overflow:"hidden"} : {}}>
+    <div style={loading ? {display:"flex",flexDirection:"column",flex:1,minHeight:0,overflow:"hidden"} : {}}>
       {/* ヒーロー文言 */}
       {!isRunning && (
       <div style={{textAlign:"center",marginBottom:"32px",padding:"0 24px"}}>
@@ -55,9 +55,9 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
       )}
 
       {/* 2カラムレイアウト */}
-      <div className={isRunning ? "" : "flex flex-col lg:flex-row gap-6"} style={isRunning ? {display:"flex",flexDirection:"row",gap:"16px",flex:"1 1 0",minHeight:0,overflow:"hidden"} : {}}>
+      <div className={isRunning ? "" : "flex flex-col lg:flex-row gap-6"} style={isRunning ? {display:"flex",flexDirection:"row",gap:"16px",flex:1,minHeight:0,overflow:"hidden"} : {}}>
         {/* 左: 入力パネル (40%) */}
-        <form onSubmit={handleSubmit} className={isRunning ? "" : "lg:w-5/12 space-y-5"} style={isRunning ? {width:"320px",flexShrink:0,overflowY:"auto"} : {}}>
+        <form onSubmit={handleSubmit} className={isRunning ? "" : "lg:w-5/12 space-y-5"} style={isRunning ? {width:"300px",flexShrink:0,overflowY:"auto",padding:"8px"} : {}}>
           {/* シナリオ入力 */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">シナリオ入力</label>
@@ -151,7 +151,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
             <PreviewIdle />
           )}
           {loading && !runStatus && (
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:'16px'}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:'16px',padding:'32px'}}>
               <div className="spinner" style={{width:48,height:48,borderWidth:4}} />
               <p style={{color:'#e2e8f0',fontSize:'1rem',fontWeight:'bold'}}>シミュレーションを開始しています...</p>
             </div>
@@ -247,6 +247,18 @@ function AgentGraph({ messages }) {
   )
 }
 
+function parseContent(raw) {
+  if (typeof raw !== 'string') return String(raw || '')
+  const trimmed = raw.trim()
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed)
+      return parsed.content || trimmed
+    } catch {}
+  }
+  return raw
+}
+
 /** 実行中のプレビュー表示（MiroFish風UI） */
 function PreviewRunning({ simId, api, runStatus }) {
   const [messages, setMessages] = useState([])
@@ -338,18 +350,7 @@ function PreviewRunning({ simId, api, runStatus }) {
                 }}>{msg.action_type}</span>
                 <span style={{marginLeft:'auto',fontSize:'0.68rem',color:'#94a3b8'}}>T{msg.turn}</span>
               </div>
-              <p style={{color:'#cbd5e1',fontSize:'0.8rem',lineHeight:'1.5',margin:0}}>{
-                (() => {
-                  try {
-                    const c = msg.content
-                    if (typeof c === 'string' && c.trim().startsWith('{')) {
-                      const parsed = JSON.parse(c)
-                      return parsed.content || c
-                    }
-                    return c
-                  } catch { return msg.content }
-                })()
-              }</p>
+              <p style={{color:'#cbd5e1',fontSize:'0.8rem',lineHeight:'1.5',margin:0}}>{parseContent(msg.content)}</p>
               <p style={{color:'#64748b',fontSize:'0.7rem',margin:'4px 0 0',fontStyle:'italic'}}>感情: {msg.emotional_state}</p>
             </div>
           ))}
