@@ -1,5 +1,6 @@
 """エージェント間対話シミュレーションループ（v0.2: 長期記憶 + GraphRAG対応）"""
 import json
+import random
 from typing import List, Optional
 from .models import Agent, Interaction
 from .llm import call_claude
@@ -44,7 +45,15 @@ def run_simulation(seed_text: str, agents: List[Agent], simulation_id: int, turn
         recent = all_interactions[-20:] if all_interactions else []
         context = _build_context(seed_text, recent)
 
-        for agent in agents:
+        # 大規模エージェント時はサンプリング
+        MAX_ACTIVE = 30
+        if len(agents) > MAX_ACTIVE:
+            active_agents = random.sample(agents, MAX_ACTIVE)
+            print(f"  ({len(agents)}体中{MAX_ACTIVE}体がアクティブ)")
+        else:
+            active_agents = agents
+
+        for agent in active_agents:
             # v0.2: メモリサマリーとGraphRAGコンテキストを取得
             memory_summary = ""
             graph_context = ""

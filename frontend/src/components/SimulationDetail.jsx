@@ -39,6 +39,17 @@ export default function SimulationDetail({ detail, api }) {
         </div>
       </div>
 
+      {/* 失敗時の詳細エラーメッセージ */}
+      {simulation.status === 'failed' && (
+        <div style={{background:'rgba(239,68,68,0.1)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'12px',padding:'16px',marginBottom:'16px'}}>
+          <div style={{color:'#f87171',fontWeight:'bold',marginBottom:'8px'}}>シミュレーション失敗</div>
+          <div style={{color:'#94a3b8',fontSize:'0.85rem'}}>
+            大規模シミュレーション（100体以上）は処理に時間がかかります。<br/>
+            エージェント数を50体以下に減らして再試行することをお勧めします。
+          </div>
+        </div>
+      )}
+
       {/* 2カラム: エージェント + 対話ログ */}
       <div className="flex flex-col lg:flex-row gap-6">
         <div className="lg:w-[35%]">

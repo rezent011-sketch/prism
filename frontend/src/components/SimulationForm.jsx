@@ -425,6 +425,30 @@ function PreviewRunning({ simId, api, runStatus }) {
               </p>
             )}
           </div>
+          {/* 変数注入 */}
+          <div style={{padding:'8px',borderTop:'1px solid rgba(124,58,237,0.15)',flexShrink:0}}>
+            <div style={{color:'#94a3b8',fontSize:'0.7rem',marginBottom:'4px',fontWeight:'bold'}}>変数注入（神の視点）</div>
+            <div style={{display:'flex',gap:'4px'}}>
+              <input
+                placeholder="新しい出来事を入力..."
+                value={injectText}
+                onChange={e => setInjectText(e.target.value)}
+                style={{flex:1,background:'#0d1b2e',border:'1px solid rgba(124,58,237,0.3)',borderRadius:'6px',padding:'4px 8px',color:'#e2e8f0',fontSize:'0.75rem',outline:'none'}}
+              />
+              <button
+                onClick={async () => {
+                  if (!injectText.trim() || !runStatus?.simId) return
+                  await fetch(`${api}/simulations/${runStatus.simId}/inject`, {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({event: injectText})
+                  })
+                  setInjectText('')
+                }}
+                style={{background:'rgba(124,58,237,0.3)',border:'none',borderRadius:'6px',padding:'4px 10px',color:'white',fontSize:'0.75rem',cursor:'pointer'}}
+              >注入</button>
+            </div>
+          </div>
         </div>
 
         {/* 右: タブ切替 (チャット / インタビュー) */}

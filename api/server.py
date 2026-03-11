@@ -54,14 +54,17 @@ class SimulateResponse(BaseModel):
 def _run_simulation_bg(sim_id: int, seed_text: str, agent_count: int, turn_count: int):
     """バックグラウンドタスク: シミュレーション実行"""
     try:
+        print(f"[sim_{sim_id}] 開始: agent_count={agent_count}, turn_count={turn_count}")
         update_simulation_status(sim_id, "running")
         agents = generate_agents(seed_text, sim_id, agent_count)
+        print(f"[sim_{sim_id}] エージェント生成完了: {len(agents)}体")
         run_simulation(seed_text, agents, sim_id, turn_count)
         update_simulation_status(sim_id, "completed")
+        print(f"[sim_{sim_id}] 完了")
     except Exception as e:
         import traceback
         err = traceback.format_exc()
-        print(f"❌ シミュレーション #{sim_id} 失敗: {e}\n{err}")
+        print(f"[sim_{sim_id}] エラー: {e}\n{err}")
         update_simulation_status(sim_id, "failed")
 
 
@@ -88,7 +91,7 @@ def simulate(req: SimulateRequest, background_tasks: BackgroundTasks):
     sim = Simulation(
         seed_text=req.seed,
         agent_count=max(5, min(1000, req.agent_count)),
-        turn_count=max(3, min(20, req.turn_count)),
+        turn_count=max(3, min(50, req.turn_count)),
         status="created",
     )
     sim_id = create_simulation(sim)

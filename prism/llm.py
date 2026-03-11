@@ -11,7 +11,7 @@ def get_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
 
-def call_claude(system_prompt: str, user_message: str, max_tokens: int = 4096) -> str:
+def call_claude(system_prompt: str, user_message: str, max_tokens: int = 8000) -> str:
     """Claude APIを呼び出し、レスポンステキストを返す。リトライロジック付き。"""
     client = get_client()
     last_error = None
