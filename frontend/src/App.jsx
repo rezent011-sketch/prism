@@ -164,7 +164,7 @@ export default function App() {
 
       {/* メインコンテンツ */}
       <main style={loading ? {padding:"12px 24px",flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column"} : {padding:"24px 32px",flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-        <div className="fade-in" key={tab}>
+        <div className="fade-in" key={tab} style={{flex:1,minHeight:0,display:"flex",flexDirection:"column",overflowY:"auto"}}>
           {tab === 'home' && (
             <SimulationForm
               onStart={startSimulation}
