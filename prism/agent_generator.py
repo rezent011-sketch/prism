@@ -9,7 +9,7 @@ from .database import save_agent
 def generate_agents(seed_text: str, simulation_id: int, count: int = 15) -> List[Agent]:
     """シード情報を基にClaude APIでエージェントを生成し、DBに保存する"""
     # エージェント数を10〜20の範囲に制限
-    count = max(10, min(20, count))
+    count = max(5, min(1000, count))
 
     system_prompt = """あなたは社会シミュレーションのためのエージェント生成AIです。
 与えられたシナリオに対して、多様な視点を持つエージェント（人物）を生成してください。

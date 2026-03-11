@@ -18,7 +18,7 @@ def run_simulation(seed_text: str, agents: List[Agent], simulation_id: int, turn
     
     enable_memory / enable_graph を False にすると従来動作（後方互換）
     """
-    turns = max(1, min(20, turns))
+    turns = max(1, min(50, turns))
     all_interactions = []
 
     # v0.2: メモリストアとナレッジグラフを初期化

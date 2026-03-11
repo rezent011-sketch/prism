@@ -87,7 +87,7 @@ def simulate(req: SimulateRequest, background_tasks: BackgroundTasks):
     """シミュレーションを開始（バックグラウンド実行）"""
     sim = Simulation(
         seed_text=req.seed,
-        agent_count=max(10, min(20, req.agent_count)),
+        agent_count=max(5, min(1000, req.agent_count)),
         turn_count=max(3, min(20, req.turn_count)),
         status="created",
     )
@@ -275,6 +275,58 @@ def get_report(sim_id: int):
     if not text:
         raise HTTPException(status_code=404, detail="レポートが未生成です")
     return {"report_text": text}
+
+
+@app.post("/api/simulations/{sim_id}/interview")
+async def interview_agent(sim_id: int, req: dict):
+    """特定エージェントに質問する"""
+    agent_name = req.get("agent_name")
+    question = req.get("question")
+    if not agent_name or not question:
+        raise HTTPException(status_code=400, detail="agent_name と question が必要です")
+
+    agents = get_agents(sim_id)
+    agent = next((a for a in agents if a.name == agent_name), None)
+    if not agent:
+        raise HTTPException(status_code=404, detail="エージェントが見つかりません")
+
+    interactions_all = get_interactions(sim_id)
+    agent_interactions = [i for i in interactions_all if i.agent_name == agent_name]
+    history = "\n".join(f"- {i.content}" for i in agent_interactions[-10:])
+
+    from prism.llm import call_claude
+    response = call_claude(
+        f"あなたは{agent.name}です。職業:{agent.occupation}, 立場:{agent.stance}, 感情:{agent.emotional_state}。"
+        f"これまでの発言履歴:\n{history}\nキャラクターを維持して質問に答えてください。",
+        question,
+        1024
+    )
+    return {"agent": agent_name, "response": response}
+
+
+@app.post("/api/simulations/{sim_id}/survey")
+async def global_survey(sim_id: int, req: dict):
+    """全エージェントにアンケートを送る"""
+    question = req.get("question")
+    if not question:
+        raise HTTPException(status_code=400, detail="question が必要です")
+    max_agents = req.get("max_agents", 10)
+
+    agents = get_agents(sim_id)[:max_agents]
+    if not agents:
+        raise HTTPException(status_code=404, detail="エージェントが見つかりません")
+
+    from prism.llm import call_claude
+    results = []
+    for agent in agents:
+        resp = call_claude(
+            f"あなたは{agent.name}（{agent.occupation}）です。立場:{agent.stance}。1〜2文で答えてください。",
+            question,
+            512
+        )
+        results.append({"agent": agent.name, "response": resp})
+
+    return {"question": question, "results": results}
 
 
 @app.post("/api/simulations/{sim_id}/report")

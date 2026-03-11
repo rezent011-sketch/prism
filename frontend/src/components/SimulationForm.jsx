@@ -1,33 +1,125 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import * as d3 from 'd3'
 
 // プリセットシナリオ
 const PRESETS = [
   {
-    icon: '',
+    icon: '🔥',
     label: 'PR炎上予測',
     text: '大手IT企業が全社員にオフィス出勤を週5日義務化する方針を発表した。社員の間で賛否が分かれている。',
   },
   {
-    icon: '',
+    icon: '📈',
     label: '市場反応分析',
     text: '政府がAI生成コンテンツに対する厳格な規制法案を提出した。クリエイター、テック企業、消費者の間で激しい議論が起きている。',
   },
   {
-    icon: '',
+    icon: '🗳️',
     label: '政策波及予測',
     text: '市が2030年までにガソリン車の市内乗り入れを禁止する条例案を発表した。住民、事業者、環境団体がそれぞれの立場から反応している。',
   },
   {
-    icon: '',
+    icon: '📱',
     label: 'Xポスト反応',
     badge: 'NEW',
     text: 'Xに投稿するポストの反応をシミュレートします。\n投稿内容: [ここにポスト文面]\n想定フォロワー層: ビジネス・AI・スタートアップ系アカウント（フォロワー5000人）\nシミュレート内容: いいね・リツイート・返信のトーン・炎上リスク',
   },
 ]
 
+const COLORS = ['#7c3aed','#0ea5e9','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6','#f43f5e']
+
+/** Zoomable NetworkGraph (D3) */
+function NetworkGraph({ messages, onNodeClick }) {
+  const svgRef = useRef(null)
+
+  const agents = useMemo(() => {
+    const seen = new Set()
+    const list = []
+    for (const m of messages) {
+      if (!seen.has(m.agent_name)) {
+        seen.add(m.agent_name)
+        list.push(m.agent_name)
+      }
+    }
+    return list
+  }, [messages.length])
+
+  const positions = useMemo(() => {
+    if (agents.length === 0) return {}
+    const pos = {}
+    const innerCount = Math.min(8, agents.length)
+    const outerCount = agents.length - innerCount
+    const cx = 200, cy = 200
+    agents.forEach((name, i) => {
+      if (i < innerCount) {
+        const a = (i / innerCount) * 2 * Math.PI - Math.PI / 2
+        pos[name] = { x: cx + 80 * Math.cos(a), y: cy + 80 * Math.sin(a) }
+      } else {
+        const j = i - innerCount
+        const a = (j / Math.max(outerCount, 1)) * 2 * Math.PI - Math.PI / 2
+        pos[name] = { x: cx + 160 * Math.cos(a), y: cy + 160 * Math.sin(a) }
+      }
+    })
+    return pos
+  }, [agents])
+
+  useEffect(() => {
+    if (!svgRef.current) return
+    const svg = d3.select(svgRef.current)
+    const g = svg.select('g.zoom-container')
+    const zoom = d3.zoom()
+      .scaleExtent([0.2, 5])
+      .on('zoom', (e) => g.attr('transform', e.transform))
+    svg.call(zoom)
+    return () => svg.on('.zoom', null)
+  }, [])
+
+  const recentEdges = messages.slice(-20)
+  const latest = messages[messages.length - 1]?.agent_name
+
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <svg ref={svgRef} width="100%" height="100%" viewBox="0 0 400 400" style={{ cursor: 'grab' }}>
+        <defs>
+          <marker id="arrow" viewBox="0 -5 10 10" refX="20" refY="0" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,-5L10,0L0,5" fill="rgba(124,58,237,0.4)" />
+          </marker>
+        </defs>
+        <g className="zoom-container">
+          {recentEdges.map((msg, i) => {
+            const from = positions[msg.agent_name]
+            const targets = agents.filter(a => a !== msg.agent_name)
+            if (!from || targets.length === 0) return null
+            const to = positions[targets[i % targets.length]]
+            if (!to) return null
+            const opacity = 0.1 + (i / recentEdges.length) * 0.3
+            return <line key={i} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke={`rgba(124,58,237,${opacity})`} strokeWidth="1" markerEnd="url(#arrow)" />
+          })}
+          {agents.map((name, i) => {
+            const pos = positions[name]
+            if (!pos) return null
+            const color = COLORS[i % COLORS.length]
+            const isActive = name === latest
+            return (
+              <g key={name} style={{ cursor: 'pointer' }} onClick={() => onNodeClick && onNodeClick(name)}>
+                {isActive && <circle cx={pos.x} cy={pos.y} r="24" fill="none" stroke={color} strokeWidth="2" opacity="0.5" style={{ animation: 'pulse 1s infinite' }} />}
+                <circle cx={pos.x} cy={pos.y} r="16" fill={color} opacity="0.9" />
+                <text x={pos.x} y={pos.y + 4} textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">{name.slice(0, 3)}</text>
+                <text x={pos.x} y={pos.y + 26} textAnchor="middle" fill={color} fontSize="9" opacity="0.8">{name.slice(0, 6)}</text>
+              </g>
+            )
+          })}
+        </g>
+        {agents.length === 0 && (
+          <text x="50%" y="50%" textAnchor="middle" fill="#94a3b8" fontSize="12">エージェント待機中...</text>
+        )}
+      </svg>
+    </div>
+  )
+}
+
 /**
  * 新規シミュレーションフォーム（MiroFish風）
- * 左: 入力パネル / 右: プレビューパネル
  */
 export default function SimulationForm({ onStart, loading, runStatus, api }) {
   const [seed, setSeed] = useState('')
@@ -43,22 +135,19 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
   const isRunning = loading && runStatus
 
   return (
-    <div style={{display:"flex",flexDirection:"column",flex:1,minHeight:0,overflow:isRunning ? "hidden" : "auto"}}>
-      {/* ヒーロー文言 */}
+    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, overflow: isRunning ? "hidden" : "auto" }}>
       {!isRunning && (
-      <div style={{textAlign:"center",marginBottom:"32px",padding:"0 24px"}}>
-        <h2 className="text-3xl md:text-4xl font-bold mb-2">
-          <span className="gradient-text">AIエージェントが社会をシミュレートする</span>
-        </h2>
-        <p className="text-xl text-[#0ea5e9]">未来予測エンジン</p>
-      </div>
+        <div style={{ textAlign: "center", marginBottom: "32px", padding: "0 24px" }}>
+          <h2 className="text-3xl md:text-4xl font-bold mb-2">
+            <span className="gradient-text">AIエージェントが社会をシミュレートする</span>
+          </h2>
+          <p className="text-xl text-[#0ea5e9]">未来予測エンジン</p>
+        </div>
       )}
 
-      {/* 2カラムレイアウト */}
-      <div className={isRunning ? "" : "flex flex-col lg:flex-row gap-6"} style={isRunning ? {display:"flex",flexDirection:"row",gap:"16px",flex:1,minHeight:0,overflow:"hidden"} : {}}>
-        {/* 左: 入力パネル (40%) */}
-        <form onSubmit={handleSubmit} className={isRunning ? "" : "lg:w-5/12 space-y-5"} style={isRunning ? {width:"280px",flexShrink:0,overflowY:"auto",padding:"8px"} : {}}>
-          {/* シナリオ入力 */}
+      <div className={isRunning ? "" : "flex flex-col lg:flex-row gap-6"} style={isRunning ? { display: "flex", flexDirection: "row", gap: "16px", flex: 1, minHeight: 0, overflow: "hidden" } : {}}>
+        {/* 左: 入力パネル */}
+        <form onSubmit={handleSubmit} className={isRunning ? "" : "lg:w-5/12 space-y-5"} style={isRunning ? { width: "280px", flexShrink: 0, overflowY: "auto", padding: "8px" } : {}}>
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">シナリオ入力</label>
             <textarea
@@ -70,7 +159,6 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
             />
           </div>
 
-          {/* プリセットボタン */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">プリセットシナリオ</label>
             <div className="grid grid-cols-2 gap-2">
@@ -93,23 +181,21 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
             </div>
           </div>
 
-          {/* エージェント数スライダー */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 flex justify-between">
               <span>エージェント数</span>
               <span className="text-[#7c3aed] font-bold text-base">{agentCount}</span>
             </label>
             <input
-              type="range" min={10} max={20} value={agentCount}
+              type="range" min={5} max={100} value={agentCount}
               onChange={e => setAgentCount(Number(e.target.value))}
               className="w-full accent-[#7c3aed] h-2"
             />
             <div className="flex justify-between text-xs text-[#94a3b8] mt-1">
-              <span>10</span><span>20</span>
+              <span>5</span><span>100</span>
             </div>
           </div>
 
-          {/* ターン数スライダー */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 flex justify-between">
               <span>ターン数</span>
@@ -125,7 +211,6 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
             </div>
           </div>
 
-          {/* 開始ボタン */}
           <button
             type="submit"
             disabled={loading || !seed.trim()}
@@ -137,23 +222,23 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
                 実行中...
               </span>
             ) : (
-              (<span style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px"}}><img src="/prism/logo.png" alt="" style={{width:"22px",height:"22px",objectFit:"contain"}} /> シミュレーション開始</span>)
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <img src="/prism/logo.png" alt="" style={{ width: "22px", height: "22px", objectFit: "contain" }} /> シミュレーション開始
+              </span>
             )}
           </button>
         </form>
 
-        {/* 右: プレビューパネル (60%) */}
+        {/* 右: プレビューパネル */}
         <div className={isRunning ? "" : "lg:w-7/12"} style={isRunning
-          ? {flex:1,minHeight:0,minWidth:0,background:"#0d1b2e",border:"1px solid #112240",borderRadius:"12px",overflow:"hidden",display:"flex",flexDirection:"column"}
-          : {background:"#0d1b2e",border:"1px solid #112240",borderRadius:"12px",padding:"24px",minHeight:"400px",display:"flex",alignItems:"center",justifyContent:"center"}
+          ? { flex: 1, minHeight: 0, minWidth: 0, background: "#0d1b2e", border: "1px solid #112240", borderRadius: "12px", overflow: "hidden", display: "flex", flexDirection: "column" }
+          : { background: "#0d1b2e", border: "1px solid #112240", borderRadius: "12px", padding: "24px", minHeight: "400px", display: "flex", alignItems: "center", justifyContent: "center" }
         }>
-          {!loading && !runStatus && (
-            <PreviewIdle />
-          )}
+          {!loading && !runStatus && <PreviewIdle />}
           {loading && !runStatus && (
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flex:1,minHeight:0,gap:'16px',padding:'32px'}}>
-              <div className="spinner" style={{width:48,height:48,borderWidth:4}} />
-              <p style={{color:'#e2e8f0',fontSize:'1rem',fontWeight:'bold'}}>シミュレーションを開始しています...</p>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: 0, gap: '16px', padding: '32px' }}>
+              <div className="spinner" style={{ width: 48, height: 48, borderWidth: 4 }} />
+              <p style={{ color: '#e2e8f0', fontSize: '1rem', fontWeight: 'bold' }}>シミュレーションを開始しています...</p>
             </div>
           )}
           {loading && runStatus && (
@@ -165,86 +250,19 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
   )
 }
 
-/** 開始前のプレビュー表示 */
 function PreviewIdle() {
   return (
     <div className="text-center">
-      {/* 粒子風装飾 */}
       <div className="relative mb-6">
-        <img src="/prism/logo.png" alt="Prism" style={{width:"72px",height:"72px",objectFit:"contain",marginBottom:"16px"}} />
+        <img src="/prism/logo.png" alt="Prism" style={{ width: "72px", height: "72px", objectFit: "contain", marginBottom: "16px" }} />
         <div className="absolute top-0 left-1/2 -translate-x-1/2">
           {[...Array(5)].map((_, i) => (
-            <span
-              key={i}
-              className="particle absolute text-[#7c3aed] text-xs"
-              style={{
-                left: `${(i - 2) * 30}px`,
-                animationDelay: `${i * 0.5}s`,
-              }}
-            >
-              
-            </span>
+            <span key={i} className="particle absolute text-[#7c3aed] text-xs" style={{ left: `${(i - 2) * 30}px`, animationDelay: `${i * 0.5}s` }}>✦</span>
           ))}
         </div>
       </div>
       <p className="text-[#94a3b8] text-lg">シナリオを入力して開始してください</p>
       <p className="text-[#94a3b8]/60 text-sm mt-2">AIエージェントが社会の反応をシミュレートします</p>
-    </div>
-  )
-}
-
-/** 軽量版エージェントグラフ（D3不使用） */
-function AgentGraph({ messages }) {
-  const agents = []
-  const seen = new Set()
-  for (const msg of messages) {
-    if (!seen.has(msg.agent_name)) {
-      seen.add(msg.agent_name)
-      agents.push(msg.agent_name)
-      if (agents.length >= 12) break
-    }
-  }
-
-  const cx = 140, cy = 140, r = 100
-  const positions = agents.map((name, i) => {
-    const angle = (i / agents.length) * 2 * Math.PI - Math.PI / 2
-    return { name, x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) }
-  })
-
-  const recentMessages = messages.slice(-10)
-  const COLORS = ['#7c3aed','#0ea5e9','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#84cc16','#ec4899','#14b8a6','#f43f5e']
-
-  if (agents.length === 0) {
-    return (
-      <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center'}}>
-        <p style={{color:'#94a3b8',fontSize:'0.75rem'}}>エージェント待機中...</p>
-      </div>
-    )
-  }
-
-  return (
-    <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center'}}>
-    <svg width="100%" height="100%" viewBox="0 0 280 280" style={{maxWidth:'280px',maxHeight:'280px'}}>
-      {recentMessages.map((msg, i) => {
-        const fromIdx = agents.indexOf(msg.agent_name)
-        if (fromIdx === -1) return null
-        const from = positions[fromIdx]
-        const toIdx = (fromIdx + 1) % positions.length
-        const to = positions[toIdx]
-        return <line key={i} x1={from.x} y1={from.y} x2={to.x} y2={to.y} stroke="rgba(124,58,237,0.3)" strokeWidth="1" />
-      })}
-      {positions.map((pos, i) => {
-        const isLatest = messages.length > 0 && messages[messages.length - 1].agent_name === pos.name
-        const color = COLORS[i % COLORS.length]
-        return (
-          <g key={pos.name}>
-            {isLatest && <circle cx={pos.x} cy={pos.y} r="24" fill="none" stroke={color} strokeWidth="2" opacity="0.6" style={{animation:'pulse 1s ease-in-out infinite'}} />}
-            <circle cx={pos.x} cy={pos.y} r="18" fill={color} opacity="0.9" />
-            <text x={pos.x} y={pos.y + 4} textAnchor="middle" fill="white" fontSize="9" fontWeight="bold">{pos.name.slice(0, 3)}</text>
-          </g>
-        )
-      })}
-    </svg>
     </div>
   )
 }
@@ -261,9 +279,14 @@ function parseContent(raw) {
   return raw
 }
 
-/** 実行中のプレビュー表示（MiroFish風UI） */
+/** 実行中のプレビュー（MiroFish風: NetworkGraph + チャット + インタビュータブ） */
 function PreviewRunning({ simId, api, runStatus }) {
   const [messages, setMessages] = useState([])
+  const [selectedAgent, setSelectedAgent] = useState(null)
+  const [rightTab, setRightTab] = useState('chat') // 'chat' | 'interview'
+  const [interviewQ, setInterviewQ] = useState('')
+  const [interviewHistory, setInterviewHistory] = useState([])
+  const [interviewLoading, setInterviewLoading] = useState(false)
   const chatEndRef = useRef(null)
   const logEndRef = useRef(null)
   const { phase, turn, totalTurns } = runStatus || {}
@@ -287,6 +310,26 @@ function PreviewRunning({ simId, api, runStatus }) {
     logEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  const sendInterview = async () => {
+    if (!interviewQ.trim() || !selectedAgent || interviewLoading) return
+    setInterviewLoading(true)
+    const q = interviewQ
+    setInterviewQ('')
+    setInterviewHistory(prev => [...prev, { role: 'user', text: q }])
+    try {
+      const res = await fetch(`${api}/simulations/${simId}/interview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agent_name: selectedAgent, question: q }),
+      })
+      const data = await res.json()
+      setInterviewHistory(prev => [...prev, { role: 'agent', text: data.response || data.error || 'エラー' }])
+    } catch (e) {
+      setInterviewHistory(prev => [...prev, { role: 'agent', text: '通信エラー' }])
+    }
+    setInterviewLoading(false)
+  }
+
   // Loading state
   if (!simId || messages.length === 0) {
     const statusText = phase === 'starting' ? 'シミュレーションを開始しています...'
@@ -297,73 +340,155 @@ function PreviewRunning({ simId, api, runStatus }) {
       : Math.min(15 + ((turn || 0) / (totalTurns || 1)) * 85, 95)
 
     return (
-      <div style={{width:'100%',flex:1,minHeight:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px'}}>
-        <div className="spinner" style={{width:48,height:48,borderWidth:4,marginBottom:'24px'}} />
-        <p style={{color:'#e2e8f0',fontSize:'1.1rem',fontWeight:'bold',marginBottom:'16px',textAlign:'center'}}>{statusText}</p>
-        <div style={{width:'100%',maxWidth:'320px',background:'#112240',borderRadius:'9999px',height:'12px',overflow:'hidden'}}>
-          <div className="progress-bar" style={{height:'100%',borderRadius:'9999px',width:`${progress}%`,transition:'width 1s ease'}} />
+      <div style={{ width: '100%', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px' }}>
+        <div className="spinner" style={{ width: 48, height: 48, borderWidth: 4, marginBottom: '24px' }} />
+        <p style={{ color: '#e2e8f0', fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '16px', textAlign: 'center' }}>{statusText}</p>
+        <div style={{ width: '100%', maxWidth: '320px', background: '#112240', borderRadius: '9999px', height: '12px', overflow: 'hidden' }}>
+          <div className="progress-bar" style={{ height: '100%', borderRadius: '9999px', width: `${progress}%`, transition: 'width 1s ease' }} />
         </div>
-        <p style={{color:'#94a3b8',fontSize:'0.85rem',marginTop:'12px'}}>{Math.round(progress)}% 完了</p>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginTop: '12px' }}>{Math.round(progress)}% 完了</p>
       </div>
     )
   }
 
   const uniqueAgents = [...new Set(messages.map(m => m.agent_name))]
   const currentTurn = messages[messages.length - 1]?.turn || 0
+  const agentMessages = selectedAgent ? messages.filter(m => m.agent_name === selectedAgent) : []
 
   return (
-    <div style={{width:'100%',flex:1,minHeight:0,display:'flex',flexDirection:'column',background:'#050a14',borderRadius:'12px',overflow:'hidden'}}>
+    <div style={{ width: '100%', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', background: '#050a14', borderRadius: '12px', overflow: 'hidden' }}>
       {/* ステータスバー */}
-      <div style={{display:'flex',alignItems:'center',gap:'16px',padding:'8px 16px',background:'rgba(124,58,237,0.1)',borderBottom:'1px solid rgba(124,58,237,0.2)',flexShrink:0,flexWrap:'wrap'}}>
-        <span style={{display:'flex',alignItems:'center',gap:'6px',color:'#0ea5e9',fontSize:'0.8rem',fontWeight:'bold'}}>
-          <span style={{width:'8px',height:'8px',borderRadius:'50%',background:'#0ea5e9',display:'inline-block',animation:'pulse 1s infinite'}} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '8px 16px', background: 'rgba(124,58,237,0.1)', borderBottom: '1px solid rgba(124,58,237,0.2)', flexShrink: 0, flexWrap: 'wrap' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 'bold' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0ea5e9', display: 'inline-block', animation: 'pulse 1s infinite' }} />
           実行中
         </span>
-        <span style={{color:'#94a3b8',fontSize:'0.75rem'}}>ラウンド <span style={{color:'#7c3aed',fontWeight:'bold'}}>{currentTurn}</span>/{totalTurns || '?'}</span>
-        <span style={{color:'#94a3b8',fontSize:'0.75rem'}}>エージェント <span style={{color:'#0ea5e9',fontWeight:'bold'}}>{uniqueAgents.length}</span>人</span>
-        <span style={{color:'#94a3b8',fontSize:'0.75rem'}}>イベント <span style={{color:'#7c3aed',fontWeight:'bold'}}>{messages.length}</span>件</span>
+        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>ラウンド <span style={{ color: '#7c3aed', fontWeight: 'bold' }}>{currentTurn}</span>/{totalTurns || '?'}</span>
+        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>エージェント <span style={{ color: '#0ea5e9', fontWeight: 'bold' }}>{uniqueAgents.length}</span>人</span>
+        <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>イベント <span style={{ color: '#7c3aed', fontWeight: 'bold' }}>{messages.length}</span>件</span>
       </div>
 
-      {/* メインエリア: D3グラフ + チャット */}
-      <div style={{display:'flex',flex:1,minHeight:0,overflow:'hidden'}}>
-        {/* 左: D3ノードグラフ */}
-        <div style={{width:'280px',minWidth:'220px',flexShrink:0,borderRight:'1px solid rgba(124,58,237,0.15)',padding:'8px',display:'flex',flexDirection:'column'}}>
-          <AgentGraph messages={messages} />
+      {/* メインエリア */}
+      <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        {/* 左: NetworkGraph + 選択エージェント情報 */}
+        <div style={{ width: '45%', minWidth: '250px', flexShrink: 0, borderRight: '1px solid rgba(124,58,237,0.15)', display: 'flex', flexDirection: 'column' }}>
+          {/* グラフ */}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <NetworkGraph messages={messages} onNodeClick={(name) => { setSelectedAgent(name); setInterviewHistory([]) }} />
+          </div>
+          {/* 選択エージェント情報パネル */}
+          <div style={{ height: '120px', flexShrink: 0, borderTop: '1px solid rgba(124,58,237,0.15)', padding: '8px 12px', overflowY: 'auto', background: 'rgba(13,27,46,0.8)' }}>
+            {selectedAgent ? (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: COLORS[uniqueAgents.indexOf(selectedAgent) % COLORS.length], display: 'inline-block' }} />
+                  <span style={{ color: '#e2e8f0', fontWeight: 'bold', fontSize: '0.85rem' }}>{selectedAgent}</span>
+                </div>
+                <div style={{ color: '#94a3b8', fontSize: '0.72rem' }}>
+                  発言数: {agentMessages.length} | 最新感情: {agentMessages[agentMessages.length - 1]?.emotional_state || '-'}
+                </div>
+                <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: '4px' }}>
+                  最新: {agentMessages[agentMessages.length - 1]?.content?.slice(0, 80) || '-'}
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                <p style={{ color: '#64748b', fontSize: '0.75rem' }}>ノードをクリックしてエージェントを選択</p>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* 右: チャットバブル */}
-        <div style={{flex:1,minHeight:0,overflowY:'auto',padding:'12px',display:'flex',flexDirection:'column',gap:'8px'}}>
-          {messages.map((msg, i) => (
-            <div key={i} style={{
-              background:'rgba(124,58,237,0.08)',
-              border:'1px solid rgba(124,58,237,0.2)',
-              borderRadius:'12px',
-              padding:'10px 14px',
-              animation:'fadeIn 0.3s ease',
-              flexShrink:0,
-            }}>
-              <div style={{display:'flex',alignItems:'center',gap:'8px',marginBottom:'4px'}}>
-                <span style={{fontSize:'1rem'}}></span>
-                <span style={{fontWeight:'bold',color:'#e2e8f0',fontSize:'0.82rem'}}>{msg.agent_name}</span>
-                <span style={{
-                  fontSize:'0.68rem',padding:'2px 6px',borderRadius:'999px',
-                  background: msg.action_type === '発言' ? 'rgba(14,165,233,0.15)' : 'rgba(124,58,237,0.15)',
-                  color: msg.action_type === '発言' ? '#0ea5e9' : '#7c3aed',
-                }}>{msg.action_type}</span>
-                <span style={{marginLeft:'auto',fontSize:'0.68rem',color:'#94a3b8'}}>T{msg.turn}</span>
-              </div>
-              <p style={{color:'#cbd5e1',fontSize:'0.8rem',lineHeight:'1.5',margin:0}}>{parseContent(msg.content)}</p>
-              <p style={{color:'#64748b',fontSize:'0.7rem',margin:'4px 0 0',fontStyle:'italic'}}>感情: {msg.emotional_state}</p>
+        {/* 右: タブ切替 (チャット / インタビュー) */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {/* タブバー */}
+          <div style={{ display: 'flex', borderBottom: '1px solid rgba(124,58,237,0.15)', flexShrink: 0 }}>
+            {[{ id: 'chat', label: '💬 会話ログ' }, { id: 'interview', label: '🎤 インタビュー' }].map(t => (
+              <button key={t.id} onClick={() => setRightTab(t.id)} style={{
+                padding: '6px 16px', fontSize: '0.75rem', fontWeight: 'bold', border: 'none', cursor: 'pointer',
+                background: rightTab === t.id ? 'rgba(124,58,237,0.15)' : 'transparent',
+                color: rightTab === t.id ? '#e2e8f0' : '#94a3b8',
+                borderBottom: rightTab === t.id ? '2px solid #7c3aed' : '2px solid transparent',
+              }}>{t.label}</button>
+            ))}
+          </div>
+
+          {/* チャットタブ */}
+          {rightTab === 'chat' && (
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {messages.map((msg, i) => (
+                <div key={i} style={{
+                  background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.2)',
+                  borderRadius: '12px', padding: '10px 14px', animation: 'fadeIn 0.3s ease', flexShrink: 0,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '1rem' }}>👤</span>
+                    <span style={{ fontWeight: 'bold', color: '#e2e8f0', fontSize: '0.82rem' }}>{msg.agent_name}</span>
+                    <span style={{
+                      fontSize: '0.68rem', padding: '2px 6px', borderRadius: '999px',
+                      background: msg.action_type === '発言' ? 'rgba(14,165,233,0.15)' : 'rgba(124,58,237,0.15)',
+                      color: msg.action_type === '発言' ? '#0ea5e9' : '#7c3aed',
+                    }}>{msg.action_type}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.68rem', color: '#94a3b8' }}>T{msg.turn}</span>
+                  </div>
+                  <p style={{ color: '#cbd5e1', fontSize: '0.8rem', lineHeight: '1.5', margin: 0 }}>{parseContent(msg.content)}</p>
+                  <p style={{ color: '#64748b', fontSize: '0.7rem', margin: '4px 0 0', fontStyle: 'italic' }}>感情: {msg.emotional_state}</p>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
             </div>
-          ))}
-          <div ref={chatEndRef} />
+          )}
+
+          {/* インタビュータブ */}
+          {rightTab === 'interview' && (
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '12px' }}>
+              {!selectedAgent ? (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <p style={{ color: '#64748b', fontSize: '0.85rem' }}>左のグラフからエージェントを選択してください</p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '8px' }}>
+                    🎤 {selectedAgent} にインタビュー
+                  </div>
+                  <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                    {interviewHistory.map((h, i) => (
+                      <div key={i} style={{
+                        padding: '8px 12px', borderRadius: '10px', fontSize: '0.8rem', maxWidth: '85%',
+                        alignSelf: h.role === 'user' ? 'flex-end' : 'flex-start',
+                        background: h.role === 'user' ? 'rgba(14,165,233,0.2)' : 'rgba(124,58,237,0.15)',
+                        color: '#e2e8f0',
+                      }}>{h.text}</div>
+                    ))}
+                    {interviewLoading && <div style={{ color: '#94a3b8', fontSize: '0.75rem' }}>回答生成中...</div>}
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                    <input
+                      value={interviewQ}
+                      onChange={e => setInterviewQ(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && sendInterview()}
+                      placeholder="質問を入力..."
+                      style={{
+                        flex: 1, background: '#112240', border: '1px solid #112240', borderRadius: '8px',
+                        padding: '8px 12px', color: '#e2e8f0', fontSize: '0.8rem', outline: 'none',
+                      }}
+                    />
+                    <button onClick={sendInterview} disabled={interviewLoading} style={{
+                      background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px',
+                      padding: '8px 16px', fontSize: '0.8rem', cursor: 'pointer', opacity: interviewLoading ? 0.5 : 1,
+                    }}>送信</button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       {/* 下部: ターミナルログ */}
-      <div style={{height:'100px',flexShrink:0,background:'#000',borderTop:'1px solid rgba(0,255,65,0.2)',overflowY:'auto',padding:'8px 12px',fontFamily:'monospace'}}>
-        {messages.map((msg, i) => (
-          <div key={i} style={{color:'#00ff41',fontSize:'0.72rem',lineHeight:'1.6',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+      <div style={{ height: '80px', flexShrink: 0, background: '#000', borderTop: '1px solid rgba(0,255,65,0.2)', overflowY: 'auto', padding: '8px 12px', fontFamily: 'monospace' }}>
+        {messages.slice(-15).map((msg, i) => (
+          <div key={i} style={{ color: '#00ff41', fontSize: '0.72rem', lineHeight: '1.6', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             &gt; [T{msg.turn}] {msg.agent_name}: {msg.content?.slice(0, 80)}{msg.content?.length > 80 ? '...' : ''}
           </div>
         ))}
