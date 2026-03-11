@@ -119,7 +119,7 @@ export default function App() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#050a14]">
+    <div style={{height:"100%",display:"flex",flexDirection:"column",overflow:"hidden",background:"#050a14"}}>
       {/* ヘッダー（固定） */}
       <header className="sticky top-0 z-50 bg-[#050a14]/90 backdrop-blur-md border-b border-[#7c3aed]/20 px-3 sm:px-6 py-3">
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",width:"100%"}}>
@@ -163,15 +163,7 @@ export default function App() {
       </nav>
 
       {/* メインコンテンツ */}
-      <main style={loading ? {
-        padding: "12px 24px",
-        height: "calc(100vh - 97px)",
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column"
-      } : {
-        padding: "24px 32px"
-      }}>
+      <main style={loading ? {padding:"12px 24px",flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column"} : {padding:"24px 32px",flex:1,minHeight:0,overflow:"hidden",display:"flex",flexDirection:"column"}}>
         <div className="fade-in" key={tab}>
           {tab === 'home' && (
             <SimulationForm

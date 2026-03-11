@@ -43,7 +43,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
   const isRunning = loading && runStatus
 
   return (
-    <div style={loading ? {display:"flex",flexDirection:"column",flex:1,minHeight:0,overflow:"hidden"} : {}}>
+    <div style={{display:"flex",flexDirection:"column",flex:1,minHeight:0,overflow:isRunning ? "hidden" : "auto"}}>
       {/* ヒーロー文言 */}
       {!isRunning && (
       <div style={{textAlign:"center",marginBottom:"32px",padding:"0 24px"}}>
