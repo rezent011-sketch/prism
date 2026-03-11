@@ -46,7 +46,7 @@ def run_simulation(seed_text: str, agents: List[Agent], simulation_id: int, turn
         context = _build_context(seed_text, recent)
 
         # 大規模エージェント時はサンプリング
-        MAX_ACTIVE = 30
+        MAX_ACTIVE = 15
         if len(agents) > MAX_ACTIVE:
             active_agents = random.sample(agents, MAX_ACTIVE)
             print(f"  ({len(agents)}体中{MAX_ACTIVE}体がアクティブ)")

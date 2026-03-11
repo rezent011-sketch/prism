@@ -58,7 +58,7 @@ def _run_simulation_bg(sim_id: int, seed_text: str, agent_count: int, turn_count
         update_simulation_status(sim_id, "running")
         agents = generate_agents(seed_text, sim_id, agent_count)
         print(f"[sim_{sim_id}] エージェント生成完了: {len(agents)}体")
-        run_simulation(seed_text, agents, sim_id, turn_count)
+        run_simulation(seed_text, agents, sim_id, turn_count, enable_memory=False, enable_graph=False)
         update_simulation_status(sim_id, "completed")
         print(f"[sim_{sim_id}] 完了")
     except Exception as e:
@@ -394,3 +394,8 @@ async def inject_variable(sim_id: int, req: dict):
     conn.commit()
     conn.close()
     return {"status": "injected", "event": event}
+
+@app.get("/api/version")
+async def version():
+    """デプロイバージョン確認用"""
+    return {"version": "v2.1-batch-fix", "max_active": 15, "memory": False, "graph": False}
