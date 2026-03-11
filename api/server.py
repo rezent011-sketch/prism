@@ -358,12 +358,11 @@ async def report_chat(sim_id: int, req: dict):
 @app.post("/api/simulations/{sim_id}/report")
 def create_report(sim_id: int):
     """レポートを生成してDBに保存"""
-    sims = list_simulations()
-    sim = next((s for s in sims if s.id == sim_id), None)
+    sim = get_simulation(sim_id)
     if not sim:
-        raise HTTPException(status_code=404, detail="シミュレーションが見つかりません")
+        raise HTTPException(status_code=404, detail=f"シミュレーションが見つかりません (id={sim_id})")
     if sim.status != "completed":
-        raise HTTPException(status_code=400, detail="シミュレーションが完了していません")
+        raise HTTPException(status_code=400, detail=f"シミュレーションが完了していません (status={sim.status})")
 
     text = generate_report(sim_id)
     _save_report(sim_id, text)
