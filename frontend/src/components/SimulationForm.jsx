@@ -151,7 +151,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
             <PreviewIdle />
           )}
           {loading && !runStatus && (
-            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:'16px',padding:'32px'}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',flex:1,minHeight:0,gap:'16px',padding:'32px'}}>
               <div className="spinner" style={{width:48,height:48,borderWidth:4}} />
               <p style={{color:'#e2e8f0',fontSize:'1rem',fontWeight:'bold'}}>シミュレーションを開始しています...</p>
             </div>
@@ -295,7 +295,7 @@ function PreviewRunning({ simId, api, runStatus }) {
       : Math.min(15 + ((turn || 0) / (totalTurns || 1)) * 85, 95)
 
     return (
-      <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px'}}>
+      <div style={{width:'100%',flex:1,minHeight:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'32px'}}>
         <div className="spinner" style={{width:48,height:48,borderWidth:4,marginBottom:'24px'}} />
         <p style={{color:'#e2e8f0',fontSize:'1.1rem',fontWeight:'bold',marginBottom:'16px',textAlign:'center'}}>{statusText}</p>
         <div style={{width:'100%',maxWidth:'320px',background:'#112240',borderRadius:'9999px',height:'12px',overflow:'hidden'}}>
@@ -310,7 +310,7 @@ function PreviewRunning({ simId, api, runStatus }) {
   const currentTurn = messages[messages.length - 1]?.turn || 0
 
   return (
-    <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',background:'#050a14',borderRadius:'12px',overflow:'hidden'}}>
+    <div style={{width:'100%',flex:1,minHeight:0,display:'flex',flexDirection:'column',background:'#050a14',borderRadius:'12px',overflow:'hidden'}}>
       {/* ステータスバー */}
       <div style={{display:'flex',alignItems:'center',gap:'16px',padding:'8px 16px',background:'rgba(124,58,237,0.1)',borderBottom:'1px solid rgba(124,58,237,0.2)',flexShrink:0,flexWrap:'wrap'}}>
         <span style={{display:'flex',alignItems:'center',gap:'6px',color:'#0ea5e9',fontSize:'0.8rem',fontWeight:'bold'}}>
