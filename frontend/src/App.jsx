@@ -144,7 +144,7 @@ export default function App() {
       {/* メインコンテンツ */}
       <main style={loading ? {
         padding: "12px 24px",
-        height: "calc(100vh - 96px)",
+        height: "calc(100vh - 97px)",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column"

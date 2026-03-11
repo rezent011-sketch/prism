@@ -245,6 +245,7 @@ function AgentGraph({ messages }) {
         )
       })}
     </svg>
+    </div>
   )
 }
 
@@ -326,12 +327,12 @@ function PreviewRunning({ simId, api, runStatus }) {
       {/* メインエリア: D3グラフ + チャット */}
       <div style={{display:'flex',flex:1,minHeight:0,overflow:'hidden'}}>
         {/* 左: D3ノードグラフ */}
-        <div style={{width:'300px',minWidth:'240px',flexShrink:0,borderRight:'1px solid rgba(124,58,237,0.15)',padding:'8px'}}>
+        <div style={{width:'280px',minWidth:'220px',flexShrink:0,borderRight:'1px solid rgba(124,58,237,0.15)',padding:'8px',display:'flex',flexDirection:'column'}}>
           <AgentGraph messages={messages} />
         </div>
 
         {/* 右: チャットバブル */}
-        <div style={{flex:1,overflowY:'auto',padding:'12px',display:'flex',flexDirection:'column',gap:'8px'}}>
+        <div style={{flex:1,minHeight:0,overflowY:'auto',padding:'12px',display:'flex',flexDirection:'column',gap:'8px'}}>
           {messages.map((msg, i) => (
             <div key={i} style={{
               background:'rgba(124,58,237,0.08)',
