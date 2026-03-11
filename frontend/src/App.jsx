@@ -142,7 +142,7 @@ export default function App() {
       </nav>
 
       {/* メインコンテンツ */}
-      <main style={{padding: loading ? "16px 24px" : "32px", ...(loading ? {height:"calc(100vh - 90px)", overflow:"hidden", display:"flex", flexDirection:"column"} : {})}}>
+      <main className="p-4 sm:p-8" style={loading ? {height:"calc(100vh - 90px)", overflow:"hidden", display:"flex", flexDirection:"column"} : {}}>
         <div className="fade-in" key={tab}>
           {tab === 'home' && (
             <SimulationForm

@@ -43,7 +43,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
   const isRunning = loading && runStatus
 
   return (
-    <div style={isRunning ? {display:"flex",flexDirection:"column",flex:"1 1 0",minHeight:0,overflow:"hidden"} : {}}>
+    <div style={loading ? {display:"flex",flexDirection:"column",flex:"1 1 0",minHeight:0,overflow:"hidden"} : {}}>
       {/* ヒーロー文言 */}
       {!isRunning && (
       <div style={{textAlign:"center",marginBottom:"32px",padding:"0 24px"}}>
@@ -149,6 +149,12 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
         }>
           {!loading && !runStatus && (
             <PreviewIdle />
+          )}
+          {loading && !runStatus && (
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:'16px'}}>
+              <div className="spinner" style={{width:48,height:48,borderWidth:4}} />
+              <p style={{color:'#e2e8f0',fontSize:'1rem',fontWeight:'bold'}}>シミュレーションを開始しています...</p>
+            </div>
           )}
           {loading && runStatus && (
             <PreviewRunning simId={runStatus.simId} api={api} runStatus={runStatus} />
