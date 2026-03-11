@@ -33,9 +33,9 @@ export default function SimulationDetail({ detail, api }) {
         </div>
         <p className="text-[#e2e8f0] text-sm leading-relaxed">{simulation.seed}</p>
         <div className="flex gap-4 mt-3 text-xs text-[#94a3b8]">
-          <span>👥 {simulation.agent_count}人</span>
-          <span>🔄 {simulation.turn_count}ターン</span>
-          <span>📅 {simulation.created_at?.slice(0, 19).replace('T', ' ')}</span>
+          <span> {simulation.agent_count}人</span>
+          <span> {simulation.turn_count}ターン</span>
+          <span> {simulation.created_at?.slice(0, 19).replace('T', ' ')}</span>
         </div>
       </div>
 
@@ -108,13 +108,13 @@ function InteractiveTools({ simId, agents, api }) {
   }
 
   const tabs = [
-    { id: 'interview', label: '🎤 エージェントインタビュー' },
-    { id: 'survey', label: '📊 アンケートを送る' },
+    { id: 'interview', label: ' エージェントインタビュー' },
+    { id: 'survey', label: ' アンケートを送る' },
   ]
 
   return (
     <div className="bg-[#112240] border border-[#112240] rounded-xl p-5">
-      <h3 className="text-lg font-bold gradient-text mb-4">🎤 インタラクティブツール</h3>
+      <h3 className="text-lg font-bold gradient-text mb-4"> インタラクティブツール</h3>
 
       {/* タブ */}
       <div style={{ display: 'flex', gap: '4px', marginBottom: '16px', borderBottom: '1px solid #1e3a5f', paddingBottom: '8px' }}>
@@ -183,7 +183,7 @@ function InteractiveTools({ simId, agents, api }) {
             <button onClick={sendSurvey} disabled={loading} style={{
               background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px',
               padding: '8px 20px', fontSize: '0.82rem', cursor: 'pointer', opacity: loading ? 0.5 : 1,
-            }}>{loading ? '送信中...' : '📊 送信'}</button>
+            }}>{loading ? '送信中...' : ' 送信'}</button>
           </div>
           {surveyResults && !surveyResults.error && (
             <div>

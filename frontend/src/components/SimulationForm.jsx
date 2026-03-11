@@ -4,22 +4,22 @@ import * as d3 from 'd3'
 // プリセットシナリオ
 const PRESETS = [
   {
-    icon: '🔥',
+    icon: '',
     label: 'PR炎上予測',
     text: '大手IT企業が全社員にオフィス出勤を週5日義務化する方針を発表した。社員の間で賛否が分かれている。',
   },
   {
-    icon: '📈',
+    icon: '',
     label: '市場反応分析',
     text: '政府がAI生成コンテンツに対する厳格な規制法案を提出した。クリエイター、テック企業、消費者の間で激しい議論が起きている。',
   },
   {
-    icon: '🗳️',
+    icon: '',
     label: '政策波及予測',
     text: '市が2030年までにガソリン車の市内乗り入れを禁止する条例案を発表した。住民、事業者、環境団体がそれぞれの立場から反応している。',
   },
   {
-    icon: '📱',
+    icon: '',
     label: 'Xポスト反応',
     badge: 'NEW',
     text: 'Xに投稿するポストの反応をシミュレートします。\n投稿内容: [ここにポスト文面]\n想定フォロワー層: ビジネス・AI・スタートアップ系アカウント（フォロワー5000人）\nシミュレート内容: いいね・リツイート・返信のトーン・炎上リスク',
@@ -257,7 +257,7 @@ function PreviewIdle() {
         <img src="/prism/logo.png" alt="Prism" style={{ width: "72px", height: "72px", objectFit: "contain", marginBottom: "16px" }} />
         <div className="absolute top-0 left-1/2 -translate-x-1/2">
           {[...Array(5)].map((_, i) => (
-            <span key={i} className="particle absolute text-[#7c3aed] text-xs" style={{ left: `${(i - 2) * 30}px`, animationDelay: `${i * 0.5}s` }}>✦</span>
+            <span key={i} className="particle absolute text-[#7c3aed] text-xs" style={{ left: `${(i - 2) * 30}px`, animationDelay: `${i * 0.5}s` }}></span>
           ))}
         </div>
       </div>
@@ -403,7 +403,7 @@ function PreviewRunning({ simId, api, runStatus }) {
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {/* タブバー */}
           <div style={{ display: 'flex', borderBottom: '1px solid rgba(124,58,237,0.15)', flexShrink: 0 }}>
-            {[{ id: 'chat', label: '💬 会話ログ' }, { id: 'interview', label: '🎤 インタビュー' }].map(t => (
+            {[{ id: 'chat', label: ' 会話ログ' }, { id: 'interview', label: ' インタビュー' }].map(t => (
               <button key={t.id} onClick={() => setRightTab(t.id)} style={{
                 padding: '6px 16px', fontSize: '0.75rem', fontWeight: 'bold', border: 'none', cursor: 'pointer',
                 background: rightTab === t.id ? 'rgba(124,58,237,0.15)' : 'transparent',
@@ -422,7 +422,7 @@ function PreviewRunning({ simId, api, runStatus }) {
                   borderRadius: '12px', padding: '10px 14px', animation: 'fadeIn 0.3s ease', flexShrink: 0,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '1rem' }}>👤</span>
+                    <span style={{ fontSize: '1rem' }}></span>
                     <span style={{ fontWeight: 'bold', color: '#e2e8f0', fontSize: '0.82rem' }}>{msg.agent_name}</span>
                     <span style={{
                       fontSize: '0.68rem', padding: '2px 6px', borderRadius: '999px',
@@ -449,7 +449,7 @@ function PreviewRunning({ simId, api, runStatus }) {
               ) : (
                 <>
                   <div style={{ color: '#e2e8f0', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '8px' }}>
-                    🎤 {selectedAgent} にインタビュー
+                     {selectedAgent} にインタビュー
                   </div>
                   <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
                     {interviewHistory.map((h, i) => (
