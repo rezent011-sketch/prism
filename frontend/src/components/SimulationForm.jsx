@@ -43,7 +43,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
   const isRunning = loading && runStatus
 
   return (
-    <div style={isRunning ? {display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"} : {}}>
+    <div style={isRunning ? {display:"flex",flexDirection:"column",flex:"1 1 0",minHeight:0,overflow:"hidden"} : {}}>
       {/* ヒーロー文言 */}
       {!isRunning && (
       <div style={{textAlign:"center",marginBottom:"32px",padding:"0 24px"}}>
@@ -55,9 +55,9 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
       )}
 
       {/* 2カラムレイアウト */}
-      <div className="flex flex-col lg:flex-row gap-6" style={isRunning ? {flex:1,minHeight:0,overflow:"hidden"} : {}}>
+      <div className={isRunning ? "" : "flex flex-col lg:flex-row gap-6"} style={isRunning ? {display:"flex",flexDirection:"row",gap:"16px",flex:"1 1 0",minHeight:0,overflow:"hidden"} : {}}>
         {/* 左: 入力パネル (40%) */}
-        <form onSubmit={handleSubmit} className="lg:w-5/12 space-y-5" style={isRunning ? {width:"380px",flexShrink:0,overflowY:"auto"} : {}}>
+        <form onSubmit={handleSubmit} className={isRunning ? "" : "lg:w-5/12 space-y-5"} style={isRunning ? {width:"320px",flexShrink:0,overflowY:"auto"} : {}}>
           {/* シナリオ入力 */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">シナリオ入力</label>
@@ -332,7 +332,18 @@ function PreviewRunning({ simId, api, runStatus }) {
                 }}>{msg.action_type}</span>
                 <span style={{marginLeft:'auto',fontSize:'0.68rem',color:'#94a3b8'}}>T{msg.turn}</span>
               </div>
-              <p style={{color:'#cbd5e1',fontSize:'0.8rem',lineHeight:'1.5',margin:0}}>{msg.content}</p>
+              <p style={{color:'#cbd5e1',fontSize:'0.8rem',lineHeight:'1.5',margin:0}}>{
+                (() => {
+                  try {
+                    const c = msg.content
+                    if (typeof c === 'string' && c.trim().startsWith('{')) {
+                      const parsed = JSON.parse(c)
+                      return parsed.content || c
+                    }
+                    return c
+                  } catch { return msg.content }
+                })()
+              }</p>
               <p style={{color:'#64748b',fontSize:'0.7rem',margin:'4px 0 0',fontStyle:'italic'}}>感情: {msg.emotional_state}</p>
             </div>
           ))}
