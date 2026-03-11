@@ -57,7 +57,7 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
       {/* 2カラムレイアウト */}
       <div className={isRunning ? "" : "flex flex-col lg:flex-row gap-6"} style={isRunning ? {display:"flex",flexDirection:"row",gap:"16px",flex:1,minHeight:0,overflow:"hidden"} : {}}>
         {/* 左: 入力パネル (40%) */}
-        <form onSubmit={handleSubmit} className={isRunning ? "" : "lg:w-5/12 space-y-5"} style={isRunning ? {width:"300px",flexShrink:0,overflowY:"auto",padding:"8px"} : {}}>
+        <form onSubmit={handleSubmit} className={isRunning ? "" : "lg:w-5/12 space-y-5"} style={isRunning ? {width:"280px",flexShrink:0,overflowY:"auto",padding:"8px"} : {}}>
           {/* シナリオ入力 */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">シナリオ入力</label>
@@ -216,14 +216,15 @@ function AgentGraph({ messages }) {
 
   if (agents.length === 0) {
     return (
-      <div style={{width:'280px',height:'280px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center'}}>
         <p style={{color:'#94a3b8',fontSize:'0.75rem'}}>エージェント待機中...</p>
       </div>
     )
   }
 
   return (
-    <svg width="280" height="280" style={{flexShrink:0}}>
+    <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center'}}>
+    <svg width="100%" height="100%" viewBox="0 0 280 280" style={{maxWidth:'280px',maxHeight:'280px'}}>
       {recentMessages.map((msg, i) => {
         const fromIdx = agents.indexOf(msg.agent_name)
         if (fromIdx === -1) return null
