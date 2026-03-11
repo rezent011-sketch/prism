@@ -69,7 +69,7 @@ export default function EmotionChart({ simId, api }) {
     for (const e of emotions) {
       const name = e.agent_name || `エージェント${e.agent_id}`
       if (!agentMap[name]) agentMap[name] = {}
-      agentMap[name][e.turn] = e.emotional_state
+      agentMap[name][e.turn] = e.emotional_state || e.emotion
       turnSet.add(e.turn)
     }
 
