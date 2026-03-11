@@ -1,32 +1,22 @@
 import { useState, useEffect } from 'react'
 
-/**
- * 感情変化チャートコンポーネント
- * エージェントごとの感情状態をターン別テーブルで表示
- */
-
-// 感情状態のバッジ色分け
 function getEmotionBadgeStyle(emotion) {
-  if (!emotion) return { bg: 'bg-[#94a3b8]/20', text: 'text-[#94a3b8]' }
+  if (!emotion) return { background: 'rgba(148,163,184,0.15)', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.2)' }
 
-  // 期待・賛同系 → 緑
-  const positive = ['期待', '賛成', '賛同', '協力', '前向き', '肯定', '喜び', '嬉し', '同意', '希望', '信頼']
-  // 懸念・不安系 → 黄
-  const caution = ['懸念', '不安', '心配', '疑問', '迷い', '戸惑', '慎重', '様子見', '観察', '疑念']
-  // 怒り・反対系 → 赤
-  const negative = ['怒り', '反対', '反発', '不満', '抵抗', '憤', '批判', '拒否', '否定', '苛立', '失望']
+  const positive = ['期待', '賛成', '賛同', '協力', '前向き', '肯定', '喜び', '嬉し', '同意', '希望', '信頼', '楽観', '満足', 'positive', 'hopeful']
+  const negative = ['怒り', '反対', '反発', '不満', '抵抗', '憤', '批判', '拒否', '否定', '苛立', '失望', '怒', '反感', 'angry', 'frustrated']
+  const caution = ['懸念', '不安', '心配', '疑問', '迷い', '戸惑', '慎重', '様子見', '観察', '疑念', '緊張', 'anxious', 'worried']
 
   for (const k of positive) {
-    if (emotion.includes(k)) return { bg: 'bg-green-500/20', text: 'text-green-300', border: 'border-green-500/30' }
+    if (emotion.includes(k)) return { background: 'rgba(74,222,128,0.15)', color: '#4ade80', border: '1px solid rgba(74,222,128,0.3)' }
   }
   for (const k of negative) {
-    if (emotion.includes(k)) return { bg: 'bg-red-500/20', text: 'text-red-300', border: 'border-red-500/30' }
+    if (emotion.includes(k)) return { background: 'rgba(248,113,113,0.15)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)' }
   }
   for (const k of caution) {
-    if (emotion.includes(k)) return { bg: 'bg-yellow-500/20', text: 'text-yellow-300', border: 'border-yellow-500/30' }
+    if (emotion.includes(k)) return { background: 'rgba(251,191,36,0.15)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }
   }
-  // 中立・その他
-  return { bg: 'bg-[#94a3b8]/15', text: 'text-[#94a3b8]', border: 'border-[#94a3b8]/20' }
+  return { background: 'rgba(148,163,184,0.15)', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.2)' }
 }
 
 export default function EmotionChart({ simId, api }) {
@@ -48,7 +38,6 @@ export default function EmotionChart({ simId, api }) {
         setEmotions(data.emotions || [])
       })
       .catch(err => {
-        // 404 = まだデータなし、それ以外はエラー
         if (err.message.includes('404')) {
           setEmotions([])
         } else {
@@ -59,8 +48,6 @@ export default function EmotionChart({ simId, api }) {
       .finally(() => setLoading(false))
   }, [simId, api])
 
-  // テーブルデータ構築
-  // emotionsを {agentName: {turn: emotionalState}} に変換
   const tableData = (() => {
     if (!emotions || emotions.length === 0) return { agents: [], turns: [] }
     const agentMap = {}
@@ -69,8 +56,11 @@ export default function EmotionChart({ simId, api }) {
     for (const e of emotions) {
       const name = e.agent_name || `エージェント${e.agent_id}`
       if (!agentMap[name]) agentMap[name] = {}
-      agentMap[name][e.turn] = e.emotional_state || e.emotion
-      turnSet.add(e.turn)
+      const emotionVal = e.emotional_state || e.emotion || ''
+      if (emotionVal) {
+        agentMap[name][e.turn] = emotionVal
+        turnSet.add(e.turn)
+      }
     }
 
     const agents = Object.keys(agentMap).map(name => ({ name, turns: agentMap[name] }))
@@ -79,37 +69,33 @@ export default function EmotionChart({ simId, api }) {
   })()
 
   return (
-    <div className="bg-[#112240] border border-[#112240] rounded-xl p-5">
-      <h3 className="text-lg font-bold mb-4 text-[#e2e8f0]"> 感情変化の推移</h3>
+    <div style={{background:'rgba(17,34,64,0.8)',border:'1px solid rgba(17,34,64,0.8)',borderRadius:'12px',padding:'20px'}}>
+      <h3 style={{fontSize:'1rem',fontWeight:'bold',marginBottom:'16px',color:'#e2e8f0'}}>感情変化の推移</h3>
 
       {loading && (
-        <div className="flex items-center gap-2 text-[#94a3b8] text-sm py-4">
-          <span className="spinner" style={{ width: 16, height: 16 }} />
+        <div style={{color:'#94a3b8',fontSize:'0.85rem',padding:'16px 0'}}>
           データを読み込み中...
         </div>
       )}
 
       {!loading && error && (
-        <p className="text-red-400 text-sm"> 感情データの取得に失敗しました: {error}</p>
+        <p style={{color:'#f87171',fontSize:'0.85rem'}}>感情データの取得に失敗しました: {error}</p>
       )}
 
       {!loading && !error && tableData.agents.length === 0 && (
-        <p className="text-[#94a3b8] text-sm py-2">感情データがありません</p>
+        <p style={{color:'#94a3b8',fontSize:'0.85rem',padding:'8px 0'}}>感情データがありません</p>
       )}
 
       {!loading && !error && tableData.agents.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+        <div style={{overflowX:'auto'}}>
+          <table style={{width:'100%',fontSize:'0.85rem',borderCollapse:'collapse'}}>
             <thead>
               <tr>
-                <th className="text-left px-3 py-2 text-[#94a3b8] font-medium border-b border-[#0d1b2e] min-w-[120px]">
+                <th style={{textAlign:'left',padding:'8px 12px',color:'#94a3b8',fontWeight:'500',borderBottom:'1px solid rgba(13,27,46,0.8)',minWidth:'120px'}}>
                   エージェント
                 </th>
                 {tableData.turns.map(t => (
-                  <th
-                    key={t}
-                    className="px-3 py-2 text-center text-[#94a3b8] font-medium border-b border-[#0d1b2e] min-w-[120px]"
-                  >
+                  <th key={t} style={{padding:'8px 12px',textAlign:'center',color:'#94a3b8',fontWeight:'500',borderBottom:'1px solid rgba(13,27,46,0.8)',minWidth:'100px'}}>
                     ターン {t}
                   </th>
                 ))}
@@ -117,29 +103,21 @@ export default function EmotionChart({ simId, api }) {
             </thead>
             <tbody>
               {tableData.agents.map((agent, i) => (
-                <tr
-                  key={agent.name}
-                  className={i % 2 === 0 ? 'bg-[#0d1b2e]/30' : ''}
-                >
-                  <td className="px-3 py-2.5 font-medium text-[#e2e8f0] border-b border-[#0d1b2e]/50">
+                <tr key={agent.name} style={{background: i % 2 === 0 ? 'rgba(13,27,46,0.3)' : 'transparent'}}>
+                  <td style={{padding:'10px 12px',fontWeight:'500',color:'#e2e8f0',borderBottom:'1px solid rgba(13,27,46,0.4)'}}>
                     {agent.name}
                   </td>
                   {tableData.turns.map(t => {
                     const state = agent.turns[t]
-                    const style = getEmotionBadgeStyle(state)
+                    const badgeStyle = getEmotionBadgeStyle(state)
                     return (
-                      <td
-                        key={t}
-                        className="px-3 py-2.5 text-center border-b border-[#0d1b2e]/50"
-                      >
+                      <td key={t} style={{padding:'10px 12px',textAlign:'center',borderBottom:'1px solid rgba(13,27,46,0.4)'}}>
                         {state ? (
-                          <span
-                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium border ${style.bg} ${style.text} ${style.border || ''}`}
-                          >
+                          <span style={{display:'inline-block',padding:'2px 8px',borderRadius:'20px',fontSize:'0.75rem',fontWeight:'500',...badgeStyle}}>
                             {state}
                           </span>
                         ) : (
-                          <span className="text-[#94a3b8]/40 text-xs">—</span>
+                          <span style={{color:'rgba(148,163,184,0.3)',fontSize:'0.75rem'}}>-</span>
                         )}
                       </td>
                     )

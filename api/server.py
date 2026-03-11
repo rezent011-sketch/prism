@@ -260,8 +260,23 @@ def get_simulation_graph(sim_id: int):
 
 @app.get("/api/simulations/{sim_id}/emotions")
 def get_simulation_emotions(sim_id: int):
-    """全エージェントの感情曲線データを返す"""
+    """全エージェントの感情曲線データを返す（interactionsからフォールバック）"""
     emotions = get_emotion_trajectory(sim_id)
+    if not emotions:
+        # emotion_trajectoryが空の場合はinteractionsから感情データを取得
+        interactions = get_interactions(sim_id)
+        seen = {}
+        for i in interactions:
+            key = (i.agent_name, i.turn)
+            if key not in seen and (i.emotional_state or ""):
+                seen[key] = True
+                emotions.append({
+                    "agent_id": i.agent_id,
+                    "agent_name": i.agent_name,
+                    "turn": i.turn,
+                    "emotion": i.emotional_state or "",
+                    "intensity": 0.5
+                })
     return {"emotions": emotions}
 
 
