@@ -41,20 +41,24 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
     onStart(seed, agentCount, turnCount)
   }
 
+  const isRunning = loading && runStatus
+
   return (
-    <div>
+    <div style={isRunning ? {display:"flex",flexDirection:"column",height:"100%",overflow:"hidden"} : {}}>
       {/* ヒーロー文言 */}
+      {!isRunning && (
       <div style={{textAlign:"center",marginBottom:"32px",padding:"0 24px"}}>
         <h2 className="text-3xl md:text-4xl font-bold mb-2">
           <span className="gradient-text">AIエージェントが社会をシミュレートする</span>
         </h2>
         <p className="text-xl text-[#0ea5e9]">未来予測エンジン</p>
       </div>
+      )}
 
       {/* 2カラムレイアウト */}
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6" style={isRunning ? {flex:1,minHeight:0,overflow:"hidden"} : {}}>
         {/* 左: 入力パネル (40%) */}
-        <form onSubmit={handleSubmit} className="lg:w-5/12 space-y-5">
+        <form onSubmit={handleSubmit} className="lg:w-5/12 space-y-5" style={isRunning ? {width:"380px",flexShrink:0,overflowY:"auto"} : {}}>
           {/* シナリオ入力 */}
           <div>
             <label className="text-sm text-[#94a3b8] mb-2 block">シナリオ入力</label>
@@ -140,7 +144,10 @@ export default function SimulationForm({ onStart, loading, runStatus, api }) {
         </form>
 
         {/* 右: プレビューパネル (60%) */}
-        <div className="lg:w-7/12 bg-[#0d1b2e] border border-[#112240] rounded-xl p-6 min-h-[400px] flex items-center justify-center">
+        <div className={isRunning ? "" : "lg:w-7/12"} style={isRunning
+          ? {flex:1,minHeight:0,minWidth:0,background:"#0d1b2e",border:"1px solid #112240",borderRadius:"12px",overflow:"hidden",display:"flex",flexDirection:"column"}
+          : {background:"#0d1b2e",border:"1px solid #112240",borderRadius:"12px",padding:"24px",minHeight:"400px",display:"flex",alignItems:"center",justifyContent:"center"}
+        }>
           {!loading && !runStatus && (
             <PreviewIdle />
           )}
@@ -325,7 +332,7 @@ function PreviewRunning({ simId, api, runStatus }) {
   const currentTurn = messages[messages.length - 1]?.turn || 0
 
   return (
-    <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',background:'#050a14',borderRadius:'12px',overflow:'hidden',minHeight:'500px'}}>
+    <div style={{width:'100%',height:'100%',display:'flex',flexDirection:'column',background:'#050a14',borderRadius:'12px',overflow:'hidden'}}>
       {/* ステータスバー */}
       <div style={{display:'flex',alignItems:'center',gap:'16px',padding:'8px 16px',background:'rgba(124,58,237,0.1)',borderBottom:'1px solid rgba(124,58,237,0.2)',flexShrink:0,flexWrap:'wrap'}}>
         <span style={{display:'flex',alignItems:'center',gap:'6px',color:'#0ea5e9',fontSize:'0.8rem',fontWeight:'bold'}}>
