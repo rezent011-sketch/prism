@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react'
 function getRelationStyle(trustScore) {
   if (trustScore > 0.2) {
     return {
-      icon: '🤝',
+      icon: '',
       label: '協調',
       bg: 'bg-green-500/15',
       text: 'text-green-300',
@@ -17,7 +17,7 @@ function getRelationStyle(trustScore) {
     }
   } else if (trustScore < -0.2) {
     return {
-      icon: '⚡',
+      icon: '',
       label: '対立',
       bg: 'bg-red-500/15',
       text: 'text-red-300',
@@ -114,7 +114,7 @@ export default function RelationMap({ simId, api }) {
 
   return (
     <div className="bg-[#112240] border border-[#112240] rounded-xl p-5">
-      <h3 className="text-lg font-bold mb-4 text-[#e2e8f0]">🕸️ エージェント関係性</h3>
+      <h3 className="text-lg font-bold mb-4 text-[#e2e8f0]"> エージェント関係性</h3>
 
       {loading && (
         <div className="flex items-center gap-2 text-[#94a3b8] text-sm py-4">
@@ -124,7 +124,7 @@ export default function RelationMap({ simId, api }) {
       )}
 
       {!loading && error && (
-        <p className="text-red-400 text-sm">❌ 関係性データの取得に失敗しました: {error}</p>
+        <p className="text-red-400 text-sm"> 関係性データの取得に失敗しました: {error}</p>
       )}
 
       {!loading && !error && relations?.length === 0 && (
@@ -139,10 +139,10 @@ export default function RelationMap({ simId, api }) {
           {stats && (
             <div className="flex flex-wrap gap-2 pb-3 border-b border-[#0d1b2e]">
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-500/20 text-green-300 border border-green-500/30">
-                🤝 協調 {stats.cooperative}件
+                 協調 {stats.cooperative}件
               </span>
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-500/20 text-red-300 border border-red-500/30">
-                ⚡ 対立 {stats.conflict}件
+                 対立 {stats.conflict}件
               </span>
               <span className="px-3 py-1 rounded-full text-xs font-medium bg-[#94a3b8]/15 text-[#94a3b8] border border-[#94a3b8]/20">
                 〜 中立 {stats.neutral}件
@@ -159,7 +159,7 @@ export default function RelationMap({ simId, api }) {
                 className="bg-[#0d1b2e] border border-[#112240] rounded-lg p-3"
               >
                 <div className="font-semibold text-sm text-[#e2e8f0] mb-2.5">
-                  👤 {agent.name}
+                   {agent.name}
                 </div>
                 <div className="space-y-2">
                   {agent.outgoing.map((rel, i) => {

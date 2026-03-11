@@ -80,7 +80,7 @@ export default function EmotionChart({ simId, api }) {
 
   return (
     <div className="bg-[#112240] border border-[#112240] rounded-xl p-5">
-      <h3 className="text-lg font-bold mb-4 text-[#e2e8f0]">📈 感情変化の推移</h3>
+      <h3 className="text-lg font-bold mb-4 text-[#e2e8f0]"> 感情変化の推移</h3>
 
       {loading && (
         <div className="flex items-center gap-2 text-[#94a3b8] text-sm py-4">
@@ -90,7 +90,7 @@ export default function EmotionChart({ simId, api }) {
       )}
 
       {!loading && error && (
-        <p className="text-red-400 text-sm">❌ 感情データの取得に失敗しました: {error}</p>
+        <p className="text-red-400 text-sm"> 感情データの取得に失敗しました: {error}</p>
       )}
 
       {!loading && !error && tableData.agents.length === 0 && (

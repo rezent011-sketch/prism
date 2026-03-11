@@ -5,7 +5,7 @@ export default function SimulationList({ simulations, onSelect }) {
   if (!simulations || simulations.length === 0) {
     return (
       <div className="text-center py-20">
-        <div className="text-5xl mb-4">📋</div>
+        <div className="text-5xl mb-4"></div>
         <p className="text-[#94a3b8] text-lg">まだシミュレーションがありません</p>
         <p className="text-[#94a3b8]/60 text-sm mt-1">新規タブからシミュレーションを開始してください</p>
       </div>
@@ -33,8 +33,8 @@ export default function SimulationList({ simulations, onSelect }) {
             </p>
             {/* メタ情報 */}
             <div className="flex items-center gap-4 text-xs text-[#94a3b8]">
-              <span>👥 {sim.agent_count}人</span>
-              <span>🔄 {sim.turn_count}ターン</span>
+              <span> {sim.agent_count}人</span>
+              <span> {sim.turn_count}ターン</span>
             </div>
             <div className="text-xs text-[#94a3b8]/60 mt-2">
               {sim.created_at?.slice(0, 19).replace('T', ' ')}

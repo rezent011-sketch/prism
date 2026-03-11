@@ -10,8 +10,8 @@ const API = `${API_BASE}/api`
 // タブ定義
 const TABS = [
   { id: 'home', label: '▲ 新規シミュレーション' },
-  { id: 'list', label: '📋 シミュレーション一覧' },
-  { id: 'detail', label: '🔍 詳細' },
+  { id: 'list', label: ' シミュレーション一覧' },
+  { id: 'detail', label: ' 詳細' },
 ]
 
 export default function App() {

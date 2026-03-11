@@ -46,7 +46,7 @@ export default function ReportView({ simId, status, api }) {
 
   return (
     <div className="bg-[#112240] border border-[#112240] rounded-xl p-5">
-      <h3 className="text-lg font-bold mb-4 text-[#e2e8f0]">📊 分析レポート</h3>
+      <h3 className="text-lg font-bold mb-4 text-[#e2e8f0]"> 分析レポート</h3>
 
       {!report && (
         <button
@@ -60,13 +60,13 @@ export default function ReportView({ simId, status, api }) {
               生成中...
             </span>
           ) : (
-            '📊 レポートを生成'
+            ' レポートを生成'
           )}
         </button>
       )}
 
       {error && (
-        <p className="text-red-400 text-sm mt-3">❌ {error}</p>
+        <p className="text-red-400 text-sm mt-3"> {error}</p>
       )}
 
       {report && (

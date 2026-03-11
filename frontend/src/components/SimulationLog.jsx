@@ -3,10 +3,10 @@
  * ターンごとに区切り線、エージェント名+絵文字アバター+発言内容
  */
 
-const AVATARS = ['👨‍💼', '👩‍💻', '👨‍🔬', '👩‍🏫', '👨‍🎨', '👩‍⚕️', '👨‍🌾', '👩‍🍳', '🧑‍💼', '👨‍🔧', '👩‍🎤', '🧑‍🔬', '👨‍✈️', '👩‍🚒', '🧑‍🎓', '👨‍⚖️', '👩‍🏭', '🧑‍🍳', '👨‍🎓', '👩‍💼']
+const AVATARS = ['‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍', '‍']
 
 function getAvatar(name) {
-  if (!name) return '🧑'
+  if (!name) return ''
   const hash = name.charCodeAt(0) + (name.charCodeAt(1) || 0)
   return AVATARS[hash % AVATARS.length]
 }
@@ -26,7 +26,7 @@ export default function SimulationLog({ interactions, totalTurns }) {
   return (
     <div>
       <h3 className="text-lg font-bold mb-3 text-[#e2e8f0]">
-        💬 対話ログ <span className="text-[#94a3b8] text-sm font-normal">({interactions.length}件)</span>
+         対話ログ <span className="text-[#94a3b8] text-sm font-normal">({interactions.length}件)</span>
       </h3>
       <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
         {Object.entries(byTurn).map(([turn, items]) => (

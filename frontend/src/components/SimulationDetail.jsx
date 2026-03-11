@@ -33,9 +33,9 @@ export default function SimulationDetail({ detail, api }) {
         </div>
         <p className="text-[#e2e8f0] text-sm leading-relaxed">{simulation.seed}</p>
         <div className="flex gap-4 mt-3 text-xs text-[#94a3b8]">
-          <span>👥 {simulation.agent_count}人</span>
-          <span>🔄 {simulation.turn_count}ターン</span>
-          <span>📅 {simulation.created_at?.slice(0, 19).replace('T', ' ')}</span>
+          <span> {simulation.agent_count}人</span>
+          <span> {simulation.turn_count}ターン</span>
+          <span> {simulation.created_at?.slice(0, 19).replace('T', ' ')}</span>
         </div>
       </div>
 
